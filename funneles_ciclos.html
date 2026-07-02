@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Funneles CPL — AState & TxState</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  .cycles { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+
+  .card-title { font-size:19px; font-weight:800; color:#7dd3fc; }
+  .card-tag   { font-size:12px; color:#374151; margin-bottom:14px; }
+
+  .kpis { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:16px; }
+  .kpi  { background:#0a1020; border-radius:8px; padding:8px 10px; text-align:center; }
+  .kpi-val { font-size:18px; font-weight:700; }
+  .kpi-lbl { font-size:10px; color:#374151; text-transform:uppercase; letter-spacing:.04em; margin-top:2px; }
+  .kpi.lead .kpi-val { color:#93c5fd; }
+  .kpi.paid .kpi-val { color:#4ade80; }
+  .kpi.dp   .kpi-val { color:#fbbf24; }
+
+  .funnel { display:flex; flex-direction:column; gap:1px; }
+  .f-row  { display:flex; align-items:center; gap:7px; }
+  .f-lbl  { width:46px; text-align:right; font-size:11.5px; color:#374151; flex-shrink:0; }
+  .f-lbl.key { color:#64748b; font-weight:600; }
+  .f-wrap { flex:1; position:relative; }
+  .f-bar  { height:20px; border-radius:2px; display:flex; overflow:hidden; min-width:2px; }
+  .f-bar.key { height:26px; }
+  .f-seg  { height:100%; min-width:5px; flex-shrink:0; }
+  .f-num  { width:42px; text-align:right; font-size:11px; color:#475569; flex-shrink:0; }
+  .f-num.key { color:#94a3b8; font-size:12px; }
+
+  .f-conv-row { display:flex; align-items:center; gap:7px; height:14px; }
+  .f-conv-spacer { width:46px; flex-shrink:0; }
+  .f-conv-line  { flex:1; display:flex; align-items:center; padding:0 2px; }
+  .f-conv-line span { font-size:10.5px; padding:0 5px; border-radius:10px; font-weight:600; }
+  .conv-good  { color:#4ade80; background:#0c2b1a; }
+  .conv-ok    { color:#fbbf24; background:#2a1f06; }
+  .conv-drop  { color:#f87171; background:#2b0f0f; }
+  .f-conv-num { width:42px; flex-shrink:0; }
+
+  /* Tabla de variaciones */
+  .delta-wrap { margin-top:28px; }
+  .delta-ttl  { font-size:12px; color:#4b5563; text-transform:uppercase;
+                letter-spacing:.06em; margin-bottom:10px; }
+  .delta-tbl  { width:100%; border-collapse:collapse; font-size:13px; }
+  .delta-tbl thead th { background:#0a1020; color:#4b5563; padding:7px 12px;
+                        text-align:center; font-size:11px; text-transform:uppercase;
+                        letter-spacing:.04em; border-bottom:1px solid #1a2540; }
+  .delta-tbl thead th:first-child { text-align:left; }
+  .d-hdr { color:#2563eb !important; font-weight:700 !important; }
+  .delta-tbl tbody td { padding:6px 12px; border-bottom:1px solid #0e1520; text-align:center; }
+  .delta-tbl tbody .m-lbl { text-align:left; color:#64748b; font-size:12px; }
+  .delta-tbl tbody .m-val { color:#e2e8f0; font-weight:500; }
+  .delta-tbl tbody .m-delta { font-weight:700; font-size:13px; }
+  .delta-tbl tbody .sep-row td { padding:3px; background:transparent; }
+  .d-up   { color:#4ade80; }
+  .d-dn   { color:#f87171; }
+  .d-flat { color:#94a3b8; }
+
+  /* channel pill breakdown */
+  .ch-pills { flex:1; display:flex; flex-wrap:wrap; gap:3px; padding:2px 0; }
+  .pill { border-radius:4px; padding:2px 6px; font-size:10px; white-space:nowrap; font-weight:600; }
+
+  .paid-section { margin-top:14px; border-top:1px solid #1a2540; padding-top:12px; }
+  .paid-label   { font-size:10px; color:#4ade80; text-transform:uppercase;
+                  letter-spacing:.07em; margin-bottom:7px; }
+  .paid-grid    { display:grid; grid-template-columns:repeat(6,1fr); gap:3px; }
+  .paid-cell    { background:#0a1a0f; border-radius:5px; padding:5px 3px; text-align:center; }
+  .paid-cell-name { font-size:9.5px; color:#4ade80; margin-bottom:2px; }
+  .paid-cell-val  { font-size:13px; font-weight:700; }
+  .paid-cell-pct  { font-size:9px; color:#374151; margin-top:1px; }
+
+  .note { font-size:12px; background:#1f1806; border:1px solid #78350f;
+          border-radius:8px; padding:9px 14px; margin-bottom:18px; color:#fcd34d; line-height:1.6; }
+  .note-info { font-size:12px; background:#0a1628; border:1px solid #1e3a6e;
+               border-radius:8px; padding:9px 14px; margin-bottom:18px; color:#93c5fd; line-height:1.6; }
+
+  /* View toggle */
+  .view-toggle { display:flex; gap:5px; margin-bottom:16px; }
+  .vt { padding:5px 18px; background:#151d2b; color:#64748b; border:none; border-radius:6px;
+        cursor:pointer; font-size:13px; font-weight:500; transition:.15s; font-family:inherit; }
+  .vt.active { background:#1e3a5f; color:#93c5fd; font-weight:700; }
+
+  /* Sección de conclusiones estratégicas */
+  .concl-box { background:#0c1829; border:1px solid #1e3a6e; border-radius:14px;
+               padding:20px 22px; margin-bottom:22px; }
+  .concl-quote { font-size:15px; color:#93c5fd; line-height:1.65; margin-bottom:18px;
+                 font-style:italic; border-left:3px solid #2563eb; padding-left:14px; }
+  .concl-quote strong { color:#e2e8f0; font-style:normal; }
+  .concl-kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+  .ck { background:#070b12; border-radius:10px; padding:14px 12px; text-align:center; }
+  .ck-lbl { font-size:11px; color:#4b5563; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; }
+  .ck-flow { font-size:14px; font-weight:700; margin-bottom:4px; }
+  .ck-note { font-size:11px; color:#374151; }
+  .ck.up .ck-flow   { color:#4ade80; }
+  .ck.hold .ck-flow { color:#fbbf24; }
+  .ck.down .ck-flow { color:#f87171; }
+
+  .f-wrap:hover .tip { display:block; }
+  .tip { display:none; position:absolute; left:50%; transform:translateX(-50%); bottom:calc(100% + 4px);
+         background:#1e293b; border:1px solid #334155; border-radius:6px; padding:6px 10px;
+         font-size:11.5px; color:#e2e8f0; white-space:nowrap; z-index:20; pointer-events:none; }
+
+  /* ── Vista comparativa ─────────────────────────────────────────── */
+  .cmp-stage-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+  .cmp-pill{padding:5px 14px;border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;
+            border:1px solid #1a2540;background:#0a1020;color:#4b5563;transition:.15s}
+  .cmp-pill.active{background:#0f2b5c;color:#93c5fd;border-color:#2563eb}
+  .cmp-wrap{background:#0a1020;border:1px solid #1a2540;border-radius:10px;overflow:hidden;margin-bottom:22px}
+  .cmp-hdr{background:#070b12;padding:10px 18px;display:flex;align-items:center;gap:10px;
+           border-bottom:1px solid #1a2540}
+  .cmp-ch-name{font-size:13px;font-weight:700;flex:1}
+  .cmp-note{font-size:10px;color:#374151}
+  table.cmp{width:100%;border-collapse:collapse}
+  table.cmp thead th{background:#070b12;color:#374151;padding:7px 12px;text-align:right;
+                     font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;
+                     border-right:1px solid #0a1020}
+  table.cmp thead th:first-child{text-align:left;color:#4b5563;min-width:80px}
+  table.cmp thead th.cy-hdr{color:#93c5fd !important;text-align:right}
+  table.cmp thead th.dl-hdr{color:#2563eb !important;font-size:9px;text-align:center}
+  table.cmp tbody tr{border-bottom:1px solid #060a14}
+  table.cmp tbody tr:last-child{border-bottom:none}
+  table.cmp tbody tr.tot-row{background:#070f1c;border-top:1px solid #1a2540}
+  table.cmp tbody tr.tot-row td{font-weight:700;color:#93c5fd}
+  table.cmp td{padding:7px 12px;text-align:right;font-size:13px;color:#94a3b8;
+               border-right:1px solid #07090f}
+  table.cmp td:first-child{text-align:left;font-size:12px;font-weight:600;color:#64748b}
+  table.cmp td.cy-val{color:#e2e8f0;font-weight:500}
+  table.cmp td.dl-val{font-size:11px;font-weight:700;text-align:center}
+  .dl-up{color:#4ade80}  .dl-dn{color:#f87171}  .dl-flat{color:#4b5563}
+  .cmp-rate-row td{color:#4b5563 !important;font-size:11px}
+  .cmp-rate-row td:first-child{font-style:italic}
+
+  @media(max-width:768px){
+    .cycles{grid-template-columns:1fr !important}
+    .concl-kpis{grid-template-columns:1fr 1fr !important;gap:8px}
+    .paid-grid{grid-template-columns:repeat(3,1fr)}
+    .delta-tbl,.cmp{font-size:11px}
+    .delta-tbl thead th,.delta-tbl tbody td{padding:5px 8px}
+    .view-toggle{flex-wrap:wrap}
+    .cmp-stage-pills{gap:4px}
+  }
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a href="index.html" class="nav-brand"><img src="elisia-logo.webp" class="nav-logo" alt="Elisia Education Hub"></a>
+  <div class="nav-sep"></div>
+  <div class="nav-divider"></div>
+  <a href="funneles_ciclos.html" class="nav-link active">01 · Funneles</a>
+  <a href="cpl_etapas.html" class="nav-link">02 · CPL Etapas</a>
+  <a href="canal_rentabilidad.html" class="nav-link">03 · CPL Plataformas</a>
+  <a href="leads_perdidos.html" class="nav-link">04 · Leads Perdidos</a>
+</nav>
+
+<div class="page-body">
+
+<div class="page-header">
+  <h1>Funneles CPL — Arkansas State &amp; Texas State</h1>
+  <div style="display:flex;align-items:center;gap:10px;margin:6px 0 4px">
+    <span id="corte-badge" style="background:#f59e0b22;border:1px solid #f59e0b;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700;color:#f59e0b;letter-spacing:.04em">📅 Corte: 24 jun 2026</span>
+    <span id="tr-badge" style="background:#3b82f622;border:1px solid #3b82f6;border-radius:6px;padding:3px 10px;font-size:11px;color:#93c5fd">TR: TR_Huge_062526.xlsx</span>
+  </div>
+  <p class="sub" id="page-sub">Funneles de conversión por canal · Filtro OC (Origen Conjunto) para ambas universidades · Corte por ciclo</p>
+</div>
+
+<div class="legend">
+  <div class="lg"><div class="lg-dot" style="background:#4285F4"></div>Google (Search / Pmax / YT)</div>
+  <div class="lg"><div class="lg-dot" style="background:#ef4444"></div>Meta</div>
+  <div class="lg"><div class="lg-dot" style="background:#22c55e"></div>WhatsApp</div>
+  <div class="lg"><div class="lg-dot" style="background:#475569"></div>Web</div>
+</div>
+
+<div class="view-toggle">
+  <button class="vt active" onclick="setView('canal',this)">Por canal</button>
+  <button class="vt" onclick="setView('total',this)">Sin canal · Totales</button>
+  <button class="vt" onclick="setView('compare',this)">Comparativo años</button>
+</div>
+<div class="tabs">
+  <div class="tab active" onclick="show('astate',this)">AState · Arkansas</div>
+  <div class="tab" onclick="show('txstate',this)">TxState · Texas</div>
+  <div class="tab" onclick="show('eeh',this)">EEH · Combinado</div>
+</div>
+
+<div id="astate" class="section active"></div>
+<div id="txstate" class="section"></div>
+<div id="eeh" class="section"></div>
+
+<script>
+const CORTE_LABEL = '24 jun 2026';
+const TR_FILE     = 'TR_Huge_062526.xlsx';
+
+// Opción Y · 4 canales (classify_channel de cpl_app.py) · sin TikTok/ApplyNow/Marketplaces/Genjo
+const CH  = ['Google','Meta','WhatsApp','Web'];
+const NW  = ['Google','Meta','WhatsApp'];
+const CL  = {
+  'Google'      : '#4285F4',
+  'Meta'        : '#ef4444',
+  'WhatsApp'    : '#22c55e',
+  'Web'         : '#475569'
+};
+const SN  = ['Lead','Válido','Perfilado','Citado','Asistido','AdmFee','ITEP','DP'];
+const KEY = [0,1,3,4,5,7];
+
+// TR_Huge_062526 (corte 24-jun) · scope Digital · 4 canales classify_channel(cpl_app) · sin Genjo
+const DATA = {
+  AState: {
+    'C.2024': {
+      'Google'      : [864,559,215,212,159,59,55,42],
+      'Meta'        : [4229,2126,662,635,312,76,67,42],
+      'WhatsApp'    : [1783,1722,169,165,72,12,11,7],
+      'Web'         : [2752,1695,836,818,585,227,198,155]
+    },
+    'C.2025': {
+      'Google'      : [15168,2466,501,476,240,73,68,47],
+      'Meta'        : [4153,1784,752,709,345,88,81,52],
+      'WhatsApp'    : [2264,1505,433,406,217,46,44,30],
+      'Web'         : [3214,1611,899,868,565,179,166,105]
+    },
+    'C.2026': {
+      'Google'      : [5291,2155,325,271,147,42,34,26],
+      'Meta'        : [7182,2698,928,771,402,72,57,33],
+      'WhatsApp'    : [579,540,283,253,142,40,38,23],
+      'Web'         : [2912,1610,989,912,670,199,171,122]
+    }
+  },
+  TxState: {
+    'C.2024': {
+      'Google'      : [0,0,0,0,0,0,0,0],
+      'Meta'        : [14,9,5,5,0,0,0,0],
+      'WhatsApp'    : [3,3,2,1,0,0,0,0],
+      'Web'         : [2,2,2,2,0,0,0,0]
+    },
+    'C.2025': {
+      'Google'      : [5219,569,106,100,49,12,9,6],
+      'Meta'        : [3061,1046,380,359,134,17,14,11],
+      'WhatsApp'    : [1522,819,163,145,63,10,7,6],
+      'Web'         : [937,293,166,161,91,26,23,16]
+    },
+    'C.2026': {
+      'Google'      : [572,227,60,47,26,3,3,1],
+      'Meta'        : [6326,2314,447,379,121,13,13,9],
+      'WhatsApp'    : [182,154,88,81,36,5,4,1],
+      'Web'         : [834,454,216,194,129,31,25,16]
+    }
+  }
+};
+
+
+// Inversión total ciclo (DATORAMA full cycle, mismo cálculo que cpl_app.py) · C.2024 sin fuente nueva → se conserva
+const INV = {
+  AState:  { 'C.2024':7753583, 'C.2025':10621365, 'C.2026':13566218 },
+  TxState: { 'C.2025':6081691,  'C.2026':6080463  }
+};
+let viewMode = 'canal';
+
+
+function fmtCPL(v){return v>=1000000?`$${(v/1000000).toFixed(1)}M`:v>=1000?`$${Math.round(v/1000)}k`:`$${v}`;}
+function cplClr(v,isDP){return isDP?(v<100000?'#4ade80':v<200000?'#fbbf24':'#f87171'):(v<1500?'#4ade80':v<4000?'#fbbf24':'#f87171');}
+function n(v){ return v.toLocaleString('es-MX'); }
+function pct(a,b){ return b?Math.round(a/b*100)+'%':'—'; }
+function convClass(r){ return r>=70?'conv-good':r>=40?'conv-ok':'conv-drop'; }
+
+// Color de barra sólida por etapa en modo total (gradiente Lead→DP)
+const STAGE_CLR = ['#3b82f6','#2d83c9','#2284a4','#1a8580','#138566','#0e8a4e','#0a8f38','#fbbf24'];
+
+function buildCard(univ, cycle){
+  const d   = DATA[univ][cycle];
+  const tot = SN.map((_,i)=>CH.reduce((s,c)=>s+(d[c]?.[i]||0),0));
+  const paid= SN.map((_,i)=>NW.reduce((s,c)=>s+(d[c]?.[i]||0),0));
+  const maxL = tot[0]||1;
+
+  let h = `<div class="card">
+  <div class="card-title">${cycle}</div>
+  <div class="card-tag">${univ} · ${n(tot[0])} leads ingresados</div>
+  <div class="kpis">
+    <div class="kpi lead"><div class="kpi-val">${n(tot[0])}</div><div class="kpi-lbl">Total leads</div></div>
+    <div class="kpi paid"><div class="kpi-val">${n(tot[1])}</div><div class="kpi-lbl">Válidos</div></div>
+    <div class="kpi dp">  <div class="kpi-val">${n(tot[7])}</div><div class="kpi-lbl">DP global</div></div>
+  </div>
+  <div class="funnel">`;
+
+  SN.forEach((st,si)=>{
+    const total = tot[si];
+    const isKey = KEY.includes(si);
+    const barW  = Math.max(Math.round(total/maxL*100), total>0?1:0);
+    const tipParts = CH.map(c=>`${c}: ${n(d[c]?.[si]||0)}`).join(' · ');
+
+    h += `<div class="f-row">
+      <div class="f-lbl${isKey?' key':''}">${st}</div>
+      <div class="f-wrap">
+        <div class="tip">${n(total)} — ${tipParts}</div>
+        <div class="f-bar${isKey?' key':''}" style="width:${barW}%">`;
+
+    if(viewMode === 'canal'){
+      CH.forEach(c=>{
+        const v = d[c]?.[si]||0;
+        if(!v||!total) return;
+        h += `<div class="f-seg" style="flex-grow:${v};background:${CL[c]}" title="${c}: ${n(v)}"></div>`;
+      });
+    } else {
+      h += `<div class="f-seg" style="flex-grow:1;background:${STAGE_CLR[si]}"></div>`;
+    }
+
+    h += `</div></div>
+      <div class="f-num${isKey?' key':''}">${n(total)}</div>
+    </div>`;
+
+    // Channel pills solo en modo canal, solo en Lead row
+    if(si===0 && viewMode==='canal'){
+      h += `<div class="f-row" style="margin-bottom:6px;margin-top:2px">
+        <div class="f-lbl"></div>
+        <div class="ch-pills">`;
+      CH.forEach(c=>{
+        const v = d[c]?.[0]||0;
+        if(!v) return;
+        h += `<span class="pill" style="background:${CL[c]}22;border:1px solid ${CL[c]}55;color:${CL[c]}">${c} ${n(v)}</span>`;
+      });
+      h += `</div><div class="f-num"></div></div>`;
+    }
+
+    if(si < SN.length-1){
+      const next = tot[si+1];
+      const rate = total>0 ? Math.round(next/total*100) : 0;
+      h += `<div class="f-conv-row">
+        <div class="f-conv-spacer"></div>
+        <div class="f-conv-line"><span class="${convClass(rate)}">▼ ${pct(next,total)}</span></div>
+        <div class="f-conv-num"></div>
+      </div>`;
+    }
+  });
+
+  h += `</div>`;
+
+  // Global summary — todos los canales
+  const glStages = [{i:0,n:'Lead'},{i:1,n:'Valid'},{i:3,n:'Cit'},{i:4,n:'Asist'},{i:5,n:'AdmFee'},{i:7,n:'DP'}];
+  h += `<div class="paid-section">
+    <div class="paid-label" style="color:#93c5fd">Global · Todos los canales</div>
+    <div class="paid-grid">`;
+  glStages.forEach(({i,n:nm},idx)=>{
+    const v    = tot[i];
+    const prev = idx>0 ? tot[glStages[idx-1].i] : 0;
+    const r    = prev>0 ? Math.round(v/prev*100) : 100;
+    const clr  = r>=70?'#4ade80':r>=40?'#fbbf24':'#f87171';
+    h += `<div class="paid-cell">
+      <div class="paid-cell-name" style="color:#4b9eca">${nm}</div>
+      <div class="paid-cell-val" style="color:${clr}">${n(v)}</div>
+      ${idx>0?`<div class="paid-cell-pct">${r}%</div>`:'<div class="paid-cell-pct">&nbsp;</div>'}
+    </div>`;
+  });
+  h += `</div></div>`;
+
+  // CPL block — dentro de la tarjeta (el </div> de .card cierra al final)
+  const inv = INV[univ]?.[cycle];
+  if(inv){
+    const cplSt=[{i:0,lbl:'Lead'},{i:1,lbl:'Válido'},{i:3,lbl:'Citado'},{i:7,lbl:'DP'}];
+    h+=`<div style="border-top:1px solid #1a2540;margin-top:0;padding:12px 0 0">
+      <div class="paid-label" style="color:#f59e0b">CPL · Inversión $${(inv/1000000).toFixed(1)}M MXN</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-top:6px">`;
+    cplSt.forEach(({i,lbl})=>{
+      const leads=tot[i];
+      if(!leads){h+=`<div class="paid-cell"><div class="paid-cell-name" style="color:#f59e0b">${lbl}</div><div class="paid-cell-val" style="color:#374151">—</div><div class="paid-cell-pct">&nbsp;</div></div>`;return;}
+      const cpl=Math.round(inv/leads);
+      const isDP=i===7;
+      h+=`<div class="paid-cell">
+        <div class="paid-cell-name" style="color:#f59e0b">${lbl}</div>
+        <div class="paid-cell-val" style="color:${cplClr(cpl,isDP)}">${fmtCPL(cpl)}</div>
+        <div class="paid-cell-pct">&nbsp;</div>
+      </div>`;
+    });
+    h+=`</div></div>`;
+  }
+
+  h += `</div>`;  // cierra .card
+  return h;
+}
+
+function buildConclusions(univ){
+  const d = DATA[univ];
+  const cy1 = 'C.2025', cy2 = 'C.2026';
+  if(!d[cy1]||!d[cy2]) return '';
+  function tots(cy){ return SN.map((_,i)=>CH.reduce((s,c)=>s+(d[cy]?.[c]?.[i]||0),0)); }
+  const t1=tots(cy1), t2=tots(cy2);
+  const l1=t1[0],l2=t2[0], v1=t1[1],v2=t2[1], dp1=t1[7],dp2=t2[7];
+  const r1=Math.round(v1/l1*100), r2=Math.round(v2/l2*100);
+  const dL=Math.round((l2-l1)/l1*100), dV=Math.round((v2-v1)/v1*100);
+  const dDP=Math.round((dp2-dp1)/dp1*100), dPP=r2-r1;
+  const dpCls=dDP<0?'down':'hold';
+
+  if(univ==='AState'){
+    return `<div class="concl-box">
+      <p class="concl-quote">La apuesta de este último período fue traer <strong>menos leads... pero de mayor calidad</strong>,
+      de tal suerte que bajaran mejor en el funnel y que nutrieran mejor cada una de las etapas.
+      El resultado: con ${Math.abs(dL)}% menos leads ingresados, el pipeline de conversión se fortaleció en todas las etapas clave.</p>
+      <div class="concl-kpis">
+        <div class="ck up">
+          <div class="ck-lbl">Leads totales</div>
+          <div class="ck-flow">${n(l1)} → ${n(l2)}</div>
+          <div class="ck-note">${dL}% (decisión estratégica)</div>
+        </div>
+        <div class="ck up">
+          <div class="ck-lbl">Leads válidos</div>
+          <div class="ck-flow">${n(v1)} → ${n(v2)}</div>
+          <div class="ck-note">${dV>0?'+':''}${dV}% válidos absolutos</div>
+        </div>
+        <div class="ck up">
+          <div class="ck-lbl">Tasa Lead → Válido</div>
+          <div class="ck-flow">${r1}% → ${r2}%</div>
+          <div class="ck-note">+${dPP} puntos porcentuales</div>
+        </div>
+        <div class="ck ${dpCls}">
+          <div class="ck-lbl">DP pagados</div>
+          <div class="ck-flow">${n(dp1)} → ${n(dp2)}</div>
+          <div class="ck-note">${dDP}% DPs vs ${dL}% leads</div>
+        </div>
+      </div>
+    </div>`;
+  } else {
+    return `<div class="concl-box">
+      <p class="concl-quote">En Texas State, la misma apuesta de <strong>calidad sobre volumen</strong>
+      se refleja en una mejora drástica de la tasa de validación: con ${Math.abs(dL)}% menos leads ingresados,
+      los válidos crecieron ${dV>0?dV+'%':'0'}. El funnel medio-bajo requiere seguimiento para consolidar la conversión a DP.</p>
+      <div class="concl-kpis">
+        <div class="ck up">
+          <div class="ck-lbl">Leads totales</div>
+          <div class="ck-flow">${n(l1)} → ${n(l2)}</div>
+          <div class="ck-note">${dL}% (calidad sobre volumen)</div>
+        </div>
+        <div class="ck up">
+          <div class="ck-lbl">Leads válidos</div>
+          <div class="ck-flow">${n(v1)} → ${n(v2)}</div>
+          <div class="ck-note">+${dV}% más válidos absolutos</div>
+        </div>
+        <div class="ck up">
+          <div class="ck-lbl">Tasa Lead → Válido</div>
+          <div class="ck-flow">${r1}% → ${r2}%</div>
+          <div class="ck-note">+${dPP} puntos porcentuales</div>
+        </div>
+        <div class="ck ${dpCls}">
+          <div class="ck-lbl">DP pagados</div>
+          <div class="ck-flow">${n(dp1)} → ${n(dp2)}</div>
+          <div class="ck-note">Oportunidad: mejorar conv. baja</div>
+        </div>
+      </div>
+    </div>`;
+  }
+}
+
+/* ── TABLA COMPARATIVA DE VARIACIONES ────────────────────────────── */
+function buildDeltaTable(univ){
+  const d = DATA[univ];
+  const ciclos = univ==='TxState'?['C.2025','C.2026']:['C.2024','C.2025','C.2026'];
+
+  // Calcular totales por ciclo
+  function tots(ciclo){
+    const t = SN.map((_,i)=>CH.reduce((s,c)=>s+(d[ciclo]?.[c]?.[i]||0),0));
+    return t;
+  }
+  const T = {};
+  ciclos.forEach(c=>{ T[c]=tots(c); });
+
+  function pct(a,b){ return b>0?Math.round(a/b*100):null; }
+  function delta(now,prev){ return prev>0?Math.round((now-prev)/prev*100):null; }
+  function ppDelta(now,prev){ return Math.round(now-prev); }
+
+  // Filas: etapas absolutas + tasas clave
+  const rows = [
+    { key:'abs', lbl:'Leads',        vals: ciclos.map(c=>T[c][0]), fmt:v=>v.toLocaleString('es-MX'), isRate:false },
+    { key:'abs', lbl:'Válidos',      vals: ciclos.map(c=>T[c][1]), fmt:v=>v.toLocaleString('es-MX'), isRate:false },
+    { key:'abs', lbl:'Perfilados',   vals: ciclos.map(c=>T[c][2]), fmt:v=>v.toLocaleString('es-MX'), isRate:false },
+    { key:'abs', lbl:'Citados',      vals: ciclos.map(c=>T[c][3]), fmt:v=>v.toLocaleString('es-MX'), isRate:false },
+    { key:'abs', lbl:'Asistidos',    vals: ciclos.map(c=>T[c][4]), fmt:v=>v.toLocaleString('es-MX'), isRate:false },
+    { key:'abs', lbl:'Adm. Fee',     vals: ciclos.map(c=>T[c][5]), fmt:v=>v.toLocaleString('es-MX'), isRate:false },
+    { key:'abs', lbl:'ITEP',         vals: ciclos.map(c=>T[c][6]), fmt:v=>v.toLocaleString('es-MX'), isRate:false },
+    { key:'abs', lbl:'DP',           vals: ciclos.map(c=>T[c][7]), fmt:v=>v.toLocaleString('es-MX'), isRate:false },
+    { key:'sep' },
+    { key:'rate', lbl:'Lead→Válido', vals: ciclos.map(c=>pct(T[c][1],T[c][0])), fmt:v=>v!==null?v+'%':'—', isRate:true },
+    { key:'rate', lbl:'Válido→Cit',  vals: ciclos.map(c=>pct(T[c][3],T[c][1])), fmt:v=>v!==null?v+'%':'—', isRate:true },
+    { key:'rate', lbl:'Cit→Asist',   vals: ciclos.map(c=>pct(T[c][4],T[c][3])), fmt:v=>v!==null?v+'%':'—', isRate:true },
+    { key:'rate', lbl:'Asist→DP',    vals: ciclos.map(c=>pct(T[c][7],T[c][4])), fmt:v=>v!==null?v+'%':'—', isRate:true },
+  ];
+
+  function dClass(d, isRate, lbl){
+    // Para leads: caída es neutral/buena en C.2026; para tasas: subida es siempre buena
+    if(d===null) return 'dim';
+    if(isRate){ return d>0?'d-up':d<0?'d-dn':'d-flat'; }
+    if(lbl==='Leads'){ return d>0?'d-flat':d<0?'d-flat':'d-flat'; } // leads: solo informativo
+    return d>0?'d-up':d<0?'d-dn':'d-flat';
+  }
+
+  const sepCols = 1 + ciclos.length + (ciclos.length-1);
+  let h = `<div class="delta-wrap">
+    <div class="delta-ttl">Variación entre ciclos · Totales globales</div>
+    <table class="delta-tbl"><thead><tr><th>Métrica</th>`;
+  ciclos.forEach((cy,ci)=>{
+    h+=`<th>${cy}</th>`;
+    if(ci<ciclos.length-1) h+=`<th class="d-hdr">→ ${ciclos[ci+1]}</th>`;
+  });
+  h+=`</tr></thead><tbody>`;
+
+  rows.forEach(row=>{
+    if(row.key==='sep'){ h+=`<tr class="sep-row"><td colspan="${sepCols}"></td></tr>`; return; }
+    const fmt1 = row.isRate ? (v=>(v>0?'+':'')+v+'pp') : (v=>(v>0?'+':'')+v+'%');
+    h+=`<tr><td class="m-lbl">${row.lbl}</td>`;
+    row.vals.forEach((v,ci)=>{
+      h+=`<td class="m-val">${row.fmt(v)}</td>`;
+      if(ci<row.vals.length-1){
+        const vn=row.vals[ci+1];
+        const d=(v===null||vn===null)?null:(row.isRate?ppDelta(vn,v):delta(vn,v));
+        const cls=dClass(d,row.isRate,row.lbl);
+        h+=`<td class="${cls} m-delta">${d!==null?fmt1(d):'—'}</td>`;
+      }
+    });
+    h+=`</tr>`;
+  });
+
+  h+=`</tbody></table></div>`;
+  return h;
+}
+
+/* ── VISTA COMPARATIVA: canales × ciclos face-to-face ────────────── */
+const COMP_STAGE = {AState:0, TxState:0, EEH:0}; // stage activo por tab
+
+function buildCompareView(univKey){
+  // Normalizar: acepta 'AState','TxState' o 'EEH'
+  function getD(cy){
+    if(univKey==='EEH'){
+      const dA=DATA.AState[cy]||{}, dT=DATA.TxState[cy]||{};
+      const merged={};
+      CH.forEach(c=>{ merged[c]=SN.map((_,i)=>(dA[c]?.[i]||0)+(dT[c]?.[i]||0)); });
+      return merged;
+    }
+    return DATA[univKey]?.[cy]||{};
+  }
+  const allCycles = univKey==='TxState'?['C.2025','C.2026']:['C.2024','C.2025','C.2026'];
+  const paidChs   = ['Google','Meta','WhatsApp'];
+  const stageLabels = SN;
+  const si = COMP_STAGE[univKey]||0;
+
+  // Stage pills
+  let h = `<div class="cmp-stage-pills">`;
+  stageLabels.forEach((lbl,i)=>{
+    h+=`<span class="cmp-pill${i===si?' active':''}" onclick="setCmpStage(${i},'${univKey}')">${lbl}</span>`;
+  });
+  h+=`</div>`;
+
+  // Precompute data[cy][ch] for selected stage
+  const vals = {}; // vals[cy][ch] = leads at si
+  const totals = {}; // totals[cy] = total leads at si
+  allCycles.forEach(cy=>{
+    vals[cy]={};
+    const d=getD(cy);
+    paidChs.forEach(ch=>{ vals[cy][ch]=d[ch]?.[si]||0; });
+    vals[cy]['Web']=d['Web']?.[si]||0;
+    vals[cy]['Total']=CH.reduce((s,c)=>s+(d[c]?.[si]||0),0);
+    totals[cy]=vals[cy]['Total'];
+    // Also compute rate for this stage vs stage 0 (Lead)
+    const lead=CH.reduce((s,c)=>s+(d[c]?.[0]||0),0);
+    vals[cy]['__rate']= lead>0?Math.round(totals[cy]/lead*100):0;
+  });
+
+  function dlCls(now,prev,isRate){
+    if(!prev) return 'dl-flat';
+    const d=(isRate?now-prev:Math.round((now-prev)/prev*100));
+    return d>0?'dl-up':d<0?'dl-dn':'dl-flat';
+  }
+  function dlFmt(now,prev,isRate){
+    if(!prev) return '—';
+    if(isRate){ const d=now-prev; return (d>0?'+':'')+d+'pp'; }
+    const d=Math.round((now-prev)/prev*100); if(!isFinite(d)) return '—'; return (d>0?'+':'')+d+'%';
+  }
+  function fmtN(v){ return v>0?v.toLocaleString('es-MX'):'—'; }
+
+  // Build header columns
+  const colSpan = allCycles.length===3 ? 7 : 5; // cy + delta pairs + total
+  h+=`<div class="cmp-wrap"><table class="cmp"><thead><tr>
+    <th>Canal</th>`;
+  allCycles.forEach((cy,ci)=>{
+    h+=`<th class="cy-hdr">${cy}</th>`;
+    if(ci<allCycles.length-1) h+=`<th class="dl-hdr">Δ</th>`;
+  });
+  h+=`</tr></thead><tbody>`;
+
+  // Paid channels rows
+  paidChs.forEach(ch=>{
+    const hasData = allCycles.some(cy=>vals[cy][ch]>0);
+    if(!hasData) return;
+    const clr = CL[ch]||'#94a3b8';
+    h+=`<tr><td style="color:${clr}">● ${ch}</td>`;
+    allCycles.forEach((cy,ci)=>{
+      const v=vals[cy][ch];
+      h+=`<td class="cy-val">${fmtN(v)}</td>`;
+      if(ci<allCycles.length-1){
+        const prev=vals[allCycles[ci]][ch], next=vals[allCycles[ci+1]][ch];
+        h+=`<td class="dl-val ${dlCls(next,prev,false)}">${dlFmt(next,prev,false)}</td>`;
+      }
+    });
+    h+=`</tr>`;
+  });
+
+  // Separador
+  h+=`<tr class="sep-row"><td colspan="${colSpan}" style="padding:2px;background:#030507"></td></tr>`;
+
+  // Total row
+  h+=`<tr class="tot-row"><td>▸ Total EEH</td>`;
+  allCycles.forEach((cy,ci)=>{
+    h+=`<td>${fmtN(totals[cy])}</td>`;
+    if(ci<allCycles.length-1){
+      const prev=totals[allCycles[ci]], next=totals[allCycles[ci+1]];
+      h+=`<td class="dl-val ${dlCls(next,prev,false)}">${dlFmt(next,prev,false)}</td>`;
+    }
+  });
+  h+=`</tr>`;
+
+  // Tasa Lead→stage (si>0)
+  if(si>0){
+    h+=`<tr class="cmp-rate-row"><td>Lead→${stageLabels[si]} %</td>`;
+    allCycles.forEach((cy,ci)=>{
+      h+=`<td>${vals[cy]['__rate']}%</td>`;
+      if(ci<allCycles.length-1){
+        const prev=vals[allCycles[ci]]['__rate'], next=vals[allCycles[ci+1]]['__rate'];
+        h+=`<td class="dl-val ${dlCls(next,prev,true)}">${dlFmt(next,prev,true)}</td>`;
+      }
+    });
+    h+=`</tr>`;
+  }
+
+  h+=`</tbody></table></div>`;
+  return h;
+}
+
+function setCmpStage(idx, univKey){
+  COMP_STAGE[univKey] = idx;
+  // Re-render solo la zona comparativa del tab activo
+  const activeSection = document.querySelector('.section.active');
+  if(!activeSection) return;
+  const cmpZone = activeSection.querySelector('.cmp-zone');
+  if(cmpZone) cmpZone.innerHTML = buildCompareView(univKey);
+}
+
+function buildSection(univ){
+  const noteHtml = univ==='TxState'
+    ? `<div class="note-info" style="margin-top:28px">ℹ️ <strong>TxState C.2024</strong>: solo 21 leads — producto en fase piloto. Los ciclos operativos son C.2025 y C.2026.</div>`
+    : `<div class="note" style="margin-top:28px">ℹ️ <strong>Google</strong>: suma de Search, Pmax y YouTube · identificados por Lead Source (join SF). 4 canales (Google/Meta/WhatsApp/Web) sobre scope Digital · clasificación classify_channel · sin reasignación Genjo.</div>`;
+  let html = buildConclusions(univ);
+  if(viewMode==='compare'){
+    html += `<div class="cmp-zone">${buildCompareView(univ)}</div>`;
+    html += buildDeltaTable(univ);
+    html += noteHtml;
+    return html;
+  }
+  html += `<div class="cycles">`;
+  ['C.2024','C.2025','C.2026'].forEach(c=> html+=buildCard(univ,c));
+  html += `</div>`;
+  html += buildDeltaTable(univ);
+  html += noteHtml;
+  return html;
+}
+
+/* ── EEH TOTAL COMBINADO ─────────────────────────────────────────── */
+function eehTots(cycle){
+  const dA = DATA.AState[cycle]||{}, dT = DATA.TxState[cycle]||{};
+  return SN.map((_,i)=>CH.reduce((s,c)=>s+(dA[c]?.[i]||0)+(dT[c]?.[i]||0),0));
+}
+
+function buildConclEEH(){
+  const T25=eehTots('C.2025'), T26=eehTots('C.2026');
+  const r25=T25[0]?Math.round(T25[1]/T25[0]*100):0;
+  const r26=T26[0]?Math.round(T26[1]/T26[0]*100):0;
+  const ldPct=T25[0]?Math.round((T26[0]-T25[0])/T25[0]*100):0;
+  const vdPct=T25[1]?Math.round((T26[1]-T25[1])/T25[1]*100):0;
+  const dpPct=T25[7]?Math.round((T26[7]-T25[7])/T25[7]*100):0;
+  return `<div class="concl-box">
+    <p class="concl-quote">EEH en su conjunto replica el patrón de <strong>calidad sobre volumen</strong>:
+    con ${Math.abs(ldPct)}% menos leads ingresados en C.2026, los válidos ${vdPct>=0?'crecieron':'cayeron'} ${Math.abs(vdPct)}%.
+    La tasa Lead→Válido pasó de <strong>${r25}% a ${r26}%</strong> (+${r26-r25} pp).
+    El pipeline consolidado AState + TxState muestra madurez operativa simultánea en ambas universidades.</p>
+    <div class="concl-kpis">
+      <div class="ck down">
+        <div class="ck-lbl">Leads totales</div>
+        <div class="ck-flow">${n(T25[0])} → ${n(T26[0])}</div>
+        <div class="ck-note">${ldPct}% (calidad sobre volumen)</div>
+      </div>
+      <div class="ck up">
+        <div class="ck-lbl">Leads válidos</div>
+        <div class="ck-flow">${n(T25[1])} → ${n(T26[1])}</div>
+        <div class="ck-note">${vdPct>0?'+':''}${vdPct}% válidos absolutos</div>
+      </div>
+      <div class="ck up">
+        <div class="ck-lbl">Tasa Lead→Válido</div>
+        <div class="ck-flow">${r25}% → ${r26}%</div>
+        <div class="ck-note">+${r26-r25} puntos porcentuales</div>
+      </div>
+      <div class="ck ${T26[7]>=T25[7]?'up':'down'}">
+        <div class="ck-lbl">DP pagados</div>
+        <div class="ck-flow">${n(T25[7])} → ${n(T26[7])}</div>
+        <div class="ck-note">${dpPct>0?'+':''}${dpPct}% vs ${Math.abs(ldPct)}% caída en leads</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildCardEEH(cycle){
+  const dA=DATA.AState[cycle]||{}, dT=DATA.TxState[cycle]||{};
+  const d={};
+  CH.forEach(c=>{ d[c]=SN.map((_,i)=>(dA[c]?.[i]||0)+(dT[c]?.[i]||0)); });
+
+  const tot=SN.map((_,i)=>CH.reduce((s,c)=>s+(d[c]?.[i]||0),0));
+  const maxL=tot[0]||1;
+
+  let h=`<div class="card">
+  <div class="card-title">${cycle}</div>
+  <div class="card-tag">AState + TxState · ${n(tot[0])} leads totales</div>
+  <div class="kpis">
+    <div class="kpi lead"><div class="kpi-val">${n(tot[0])}</div><div class="kpi-lbl">Total leads</div></div>
+    <div class="kpi paid"><div class="kpi-val">${n(tot[1])}</div><div class="kpi-lbl">Válidos</div></div>
+    <div class="kpi dp">  <div class="kpi-val">${n(tot[7])}</div><div class="kpi-lbl">DP global</div></div>
+  </div>
+  <div class="funnel">`;
+
+  SN.forEach((st,si)=>{
+    const total=tot[si];
+    const isKey=KEY.includes(si);
+    const barW=Math.max(Math.round(total/maxL*100),total>0?1:0);
+    const tipParts=CH.map(c=>`${c}: ${n(d[c]?.[si]||0)}`).join(' · ');
+    h+=`<div class="f-row">
+      <div class="f-lbl${isKey?' key':''}">${st}</div>
+      <div class="f-wrap">
+        <div class="tip">${n(total)} — ${tipParts}</div>
+        <div class="f-bar${isKey?' key':''}" style="width:${barW}%">`;
+    if(viewMode==='canal'){
+      CH.forEach(c=>{ const v=d[c]?.[si]||0; if(!v||!total) return;
+        h+=`<div class="f-seg" style="flex-grow:${v};background:${CL[c]}" title="${c}: ${n(v)}"></div>`; });
+    } else {
+      h+=`<div class="f-seg" style="flex-grow:1;background:${STAGE_CLR[si]}"></div>`;
+    }
+    h+=`</div></div>
+      <div class="f-num${isKey?' key':''}">${n(total)}</div>
+    </div>`;
+    if(si===0&&viewMode==='canal'){
+      h+=`<div class="f-row" style="margin-bottom:6px;margin-top:2px">
+        <div class="f-lbl"></div><div class="ch-pills">`;
+      CH.forEach(c=>{ const v=d[c]?.[0]||0; if(!v) return;
+        h+=`<span class="pill" style="background:${CL[c]}22;border:1px solid ${CL[c]}55;color:${CL[c]}">${c} ${n(v)}</span>`; });
+      h+=`</div><div class="f-num"></div></div>`;
+    }
+    if(si<SN.length-1){
+      const next=tot[si+1], rate=total>0?Math.round(next/total*100):0;
+      h+=`<div class="f-conv-row">
+        <div class="f-conv-spacer"></div>
+        <div class="f-conv-line"><span class="${convClass(rate)}">▼ ${pct(next,total)}</span></div>
+        <div class="f-conv-num"></div>
+      </div>`;
+    }
+  });
+
+  h+=`</div>`;
+  const glStages=[{i:0,n:'Lead'},{i:1,n:'Valid'},{i:3,n:'Cit'},{i:4,n:'Asist'},{i:5,n:'AdmFee'},{i:7,n:'DP'}];
+  h+=`<div class="paid-section">
+    <div class="paid-label" style="color:#93c5fd">Global · AState + TxState</div>
+    <div class="paid-grid">`;
+  glStages.forEach(({i,n:nm},idx)=>{
+    const v=tot[i], prev=idx>0?tot[glStages[idx-1].i]:0;
+    const r=prev>0?Math.round(v/prev*100):100;
+    const clr=r>=70?'#4ade80':r>=40?'#fbbf24':'#f87171';
+    h+=`<div class="paid-cell">
+      <div class="paid-cell-name" style="color:#4b9eca">${nm}</div>
+      <div class="paid-cell-val" style="color:${clr}">${n(v)}</div>
+      ${idx>0?`<div class="paid-cell-pct">${r}%</div>`:'<div class="paid-cell-pct">&nbsp;</div>'}
+    </div>`;
+  });
+  h+=`</div></div></div>`;
+
+  // CPL EEH combinado
+  const invA=INV.AState?.[cycle]||0, invTX=INV.TxState?.[cycle]||0;
+  const invEEH=invA+invTX;
+  if(invEEH>0){
+    const cplSt=[{i:0,lbl:'Lead'},{i:1,lbl:'Válido'},{i:3,lbl:'Citado'},{i:7,lbl:'DP'}];
+    h+=`<div style="border-top:1px solid #1a2540;margin-top:0;padding:12px 0 0">
+      <div class="paid-label" style="color:#f59e0b">CPL EEH · Inversión $${(invEEH/1000000).toFixed(1)}M MXN</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-top:6px">`;
+    cplSt.forEach(({i,lbl})=>{
+      const leads=tot[i];
+      if(!leads){h+=`<div class="paid-cell"><div class="paid-cell-name" style="color:#f59e0b">${lbl}</div><div class="paid-cell-val" style="color:#374151">—</div><div class="paid-cell-pct">&nbsp;</div></div>`;return;}
+      const cpl=Math.round(invEEH/leads);
+      const isDP=i===7;
+      h+=`<div class="paid-cell">
+        <div class="paid-cell-name" style="color:#f59e0b">${lbl}</div>
+        <div class="paid-cell-val" style="color:${cplClr(cpl,isDP)}">${fmtCPL(cpl)}</div>
+        <div class="paid-cell-pct">&nbsp;</div>
+      </div>`;
+    });
+    h+=`</div></div>`;
+  }
+
+  return h;
+}
+
+function buildDeltaTableEEH(){
+  const T25=eehTots('C.2025'), T26=eehTots('C.2026');
+  function p(a,b){ return b>0?Math.round(a/b*100):0; }
+  function dl(n,p){ return p>0?Math.round((n-p)/p*100):null; }
+  function pp(n,p){ return Math.round(n-p); }
+  const rows=[
+    {lbl:'Leads',        v25:T25[0],v26:T26[0],fmt:v=>v.toLocaleString('es-MX'),isRate:false},
+    {lbl:'Válidos',      v25:T25[1],v26:T26[1],fmt:v=>v.toLocaleString('es-MX'),isRate:false},
+    {lbl:'Citados',      v25:T25[3],v26:T26[3],fmt:v=>v.toLocaleString('es-MX'),isRate:false},
+    {lbl:'Asistidos',    v25:T25[4],v26:T26[4],fmt:v=>v.toLocaleString('es-MX'),isRate:false},
+    {lbl:'Adm. Fee',     v25:T25[5],v26:T26[5],fmt:v=>v.toLocaleString('es-MX'),isRate:false},
+    {lbl:'DP',           v25:T25[7],v26:T26[7],fmt:v=>v.toLocaleString('es-MX'),isRate:false},
+    null,
+    {lbl:'Lead→Válido',  v25:p(T25[1],T25[0]),v26:p(T26[1],T26[0]),fmt:v=>v+'%',isRate:true},
+    {lbl:'Válido→Cit',   v25:p(T25[3],T25[1]),v26:p(T26[3],T26[1]),fmt:v=>v+'%',isRate:true},
+    {lbl:'Cit→Asist',    v25:p(T25[4],T25[3]),v26:p(T26[4],T26[3]),fmt:v=>v+'%',isRate:true},
+    {lbl:'Asist→DP',     v25:p(T25[7],T25[4]),v26:p(T26[7],T26[4]),fmt:v=>v+'%',isRate:true},
+  ];
+  let h=`<div class="delta-wrap">
+    <div class="delta-ttl">EEH Total · Variación C.2025 → C.2026 (AState + TxState)</div>
+    <table class="delta-tbl">
+      <thead><tr><th>Métrica</th><th>C.2025</th><th class="d-hdr">→ C.2026</th><th>C.2026</th></tr></thead>
+      <tbody>`;
+  rows.forEach(row=>{
+    if(!row){ h+=`<tr class="sep-row"><td colspan="4"></td></tr>`; return; }
+    const d=row.isRate?pp(row.v26,row.v25):dl(row.v26,row.v25);
+    const fd=row.isRate?(v=>(v>0?'+':'')+v+'pp'):(v=>(v>0?'+':'')+v+'%');
+    const dc=d===null?'dim':row.isRate?(d>0?'d-up':d<0?'d-dn':'d-flat'):(d>0?'d-up':d<0?'d-dn':'d-flat');
+    h+=`<tr><td class="m-lbl">${row.lbl}</td><td class="m-val">${row.fmt(row.v25)}</td>
+      <td class="${dc} m-delta">${d!==null?fd(d):'—'}</td><td class="m-val">${row.fmt(row.v26)}</td></tr>`;
+  });
+  h+=`</tbody></table></div>`;
+  return h;
+}
+
+function buildSectionEEH(){
+  let html=buildConclEEH();
+  if(viewMode==='compare'){
+    html+=`<div class="cmp-zone">${buildCompareView('EEH')}</div>`;
+    html+=buildDeltaTableEEH();
+    html+=`<div class="note-info" style="margin-top:28px">ℹ️ <strong>EEH Total</strong>: suma AState + TxState · OC filter ambas universidades. TxState C.2024 excluido (21 leads, fase piloto).</div>`;
+    return html;
+  }
+  html+=`<div class="cycles" style="grid-template-columns:repeat(2,1fr)">`;
+  ['C.2025','C.2026'].forEach(c=>{ html+=buildCardEEH(c); });
+  html+=`</div>`;
+  html+=buildDeltaTableEEH();
+  html+=`<div class="note-info" style="margin-top:28px">ℹ️ <strong>EEH Total</strong>: suma AState + TxState · OC filter ambas universidades. TxState C.2024 excluido (21 leads, fase piloto).</div>`;
+  return html;
+}
+
+document.getElementById('astate').innerHTML  = buildSection('AState');
+document.getElementById('txstate').innerHTML = buildSection('TxState');
+document.getElementById('eeh').innerHTML     = buildSectionEEH();
+
+// Actualizar textos estáticos con constantes dinámicas
+document.getElementById('page-sub').innerHTML =
+  `Funneles de conversión por canal · Filtro OC (Origen Conjunto) · Fuente: <code>${TR_FILE}</code>`;
+const _cb = document.getElementById('corte-badge');
+if(_cb) _cb.textContent = `📅 Corte: ${CORTE_LABEL}`;
+const _tb = document.getElementById('tr-badge');
+if(_tb) _tb.textContent = `TR: ${TR_FILE}`;
+
+const _nc = document.getElementById('notas-con');
+if(_nc) _nc.innerHTML = `Mismo filtro para <strong>ambas universidades</strong>: Digital y Redes · Esfuerzo Campus · Llamada entrada · MailChimp · Marketplace · Página Web.<br>Fuente: <code>${TR_FILE}</code> · Corte: ${CORTE_LABEL} por ciclo · stage_date ≤ corte.`;
+const _nf = document.getElementById('notas-footer');
+if(_nf) _nf.textContent = `Fuente leads: ${TR_FILE} · Corte ${CORTE_LABEL}`;
+
+function show(id,el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+}
+
+function setView(mode,el){
+  viewMode = mode;
+  document.querySelectorAll('.vt').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('astate').innerHTML  = buildSection('AState');
+  document.getElementById('txstate').innerHTML = buildSection('TxState');
+  document.getElementById('eeh').innerHTML     = buildSectionEEH();
+}
+</script>
+
+</div><!-- end .page-body -->
+
+<div class="page-notes">
+  <div class="pn-title">Notas metodológicas</div>
+  <div class="pn-grid">
+    <div class="pn-item">
+      <div class="pn-tag" style="color:#93c5fd">📌 Filtro único: OC (Origen Conjunto)</div>
+      <div class="pn-body" id="notas-con">Mismo filtro para <strong>ambas universidades</strong>: Digital y Redes · Esfuerzo Campus · Llamada entrada · MailChimp · Marketplace · Página Web.<br>Fuente: <code>con_2027_2.xlsx</code> (77,933 filas, incluye C.2027). Corte: 31 may por ciclo · stage_date ≤ corte.</div>
+    </div>
+    <div class="pn-item green">
+      <div class="pn-tag" style="color:#4ade80">✅ Recalculado desde TR</div>
+      <div class="pn-body">Leads por canal calculados directamente del Track Record con OC filter. CPL calculado dinámicamente: inversión total del ciclo ÷ leads en la etapa.</div>
+    </div>
+    <div class="pn-item amber">
+      <div class="pn-tag" style="color:#fbbf24">⚠️ TxState C.2024</div>
+      <div class="pn-body">Solo 19 leads — fase piloto. No representativo para análisis de CPL. Ciclos operativos: C.2025 y C.2026. EEH Total excluye TxState C.2024.</div>
+    </div>
+  </div>
+</div>
+<div class="page-footer">
+  <span>EEH · Planeación 2027 · CourtAvenue / Velocity AI</span>
+  <span id="notas-footer">Fuente leads: Salesforce BDD · TR_Huge_062526 · Corte 24 jun 2026</span>
+</div>
+</body>
+</html>

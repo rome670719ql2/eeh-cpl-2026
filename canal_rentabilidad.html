@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CPL Plataformas · EEH Planeación 2027</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.ctrl-row{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid #1a2540}
+.ctrl-grp{display:flex;align-items:center;gap:6px}
+.ctrl-lbl{font-size:10px;color:#374151;text-transform:uppercase;letter-spacing:.06em}
+.pill{padding:4px 14px;border-radius:20px;cursor:pointer;font-size:12px;font-weight:500;border:1px solid #1a2540;background:#0a1020;color:#4b5563;transition:.15s}
+.pill.active{background:#0f2b5c;color:#93c5fd;border-color:#2563eb}
+
+/* ── Delta Matrix ────────────────────────────────────────────────── */
+.dm-wrap{background:#0a1020;border:1px solid #1a2540;border-radius:10px;overflow:hidden;margin-bottom:20px}
+.dm-title{padding:12px 18px;border-bottom:1px solid #1a2540;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.dm-ttl{font-size:14px;font-weight:600;color:#93c5fd}
+.dm-sub{font-size:11px;color:#374151}
+.dm-legend{display:flex;gap:16px;flex-wrap:wrap;padding:8px 18px;background:#070b12;border-bottom:1px solid #1a2540}
+.dm-li{display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563}
+.dm-sq{width:10px;height:10px;border-radius:2px}
+table.dm{width:100%;border-collapse:collapse}
+table.dm thead th{background:#070b12;color:#374151;padding:8px 6px;text-align:center;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;border-right:1px solid #0a1020;white-space:nowrap}
+table.dm thead th:first-child{text-align:left;padding-left:16px;min-width:130px;color:#4b5563}
+table.dm tbody tr{border-bottom:1px solid #070b12}
+table.dm tbody tr:last-child{border-bottom:none}
+table.dm td.dm-ch{padding:10px 8px 10px 16px;font-size:12px;font-weight:600;color:#94a3b8;white-space:nowrap;border-right:1px solid #070b12}
+table.dm td.dm-ch span{margin-right:6px}
+table.dm td.dm-cell{padding:8px 5px;text-align:center;border-right:1px solid #07090f;vertical-align:middle;min-width:88px;cursor:default}
+.dm-pct{font-size:17px;font-weight:700;line-height:1.1}
+.dm-mini{font-size:9px;color:#cbd5e1;margin-top:3px;white-space:nowrap}
+.dm-dn{color:#4ade80}
+.dm-up{color:#f87171}
+.dm-flat{color:#4b5563}
+.dm-new-lbl{font-size:9px;color:#374151;text-transform:uppercase;letter-spacing:.04em}
+.dm-new-val{font-size:13px;font-weight:600;color:#6b7280;margin-top:2px}
+.dm-new-sub{font-size:9px;color:#1e3a5f;margin-top:2px}
+.dm-base{font-size:10px;color:#1e3a5f;font-style:italic}
+
+/* ── Conversion strip ────────────────────────────────────────────── */
+.conv-strip{background:#0a1020;border:1px solid #1a2540;border-radius:10px;padding:16px 18px;margin-bottom:20px}
+.cs-ttl{font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.cs-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.cs-row:last-child{margin-bottom:0}
+.cs-ch{font-size:12px;font-weight:600;width:130px;flex-shrink:0}
+.cs-bar-wrap{flex:1;min-width:200px;height:28px;background:#070b12;border-radius:4px;overflow:hidden;position:relative;display:flex;align-items:stretch}
+.cs-bar25{height:100%;opacity:.55;border-radius:4px 0 0 4px}
+.cs-bar26{height:100%;opacity:.85;margin-left:2px;border-radius:0 4px 4px 0}
+.cs-labels{display:flex;align-items:center;gap:6px;font-size:11px;white-space:nowrap}
+.cs-val25{color:#4b5563}
+.cs-val26{font-weight:600}
+.cs-arr{font-size:13px;font-weight:700}
+.cs-arr.up{color:#4ade80}
+.cs-arr.dn{color:#f87171}
+
+/* ── Single-cycle heatmap ────────────────────────────────────────── */
+.hm-wrap{background:#0a1020;border:1px solid #1a2540;border-radius:10px;overflow:hidden;margin-bottom:20px}
+.hm-header{padding:12px 18px;border-bottom:1px solid #1a2540}
+.hm-ttl{font-size:14px;font-weight:600;color:#93c5fd;margin-bottom:2px}
+.hm-note{font-size:11px;color:#374151}
+table.hm{width:100%;border-collapse:collapse}
+table.hm thead th{background:#070b12;color:#4b5563;padding:8px 8px;text-align:center;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;border-right:1px solid #0a1020}
+table.hm thead th:first-child{text-align:left;padding-left:16px;width:130px}
+table.hm tbody tr{border-bottom:1px solid #070b12}
+table.hm tbody tr:last-child{border-bottom:none}
+table.hm td.hm-ch{padding:10px 8px 10px 16px;font-size:12px;color:#94a3b8;font-weight:600;white-space:nowrap}
+table.hm td.hm-ch span{margin-right:5px}
+table.hm td.hm-cell{padding:9px 7px;text-align:center;font-size:12px;font-weight:600;border-right:1px solid #070b12}
+table.hm td.hm-sub{font-size:9px;color:#374151;display:block;font-weight:400;margin-top:2px}
+table.hm td.hm-dash{text-align:center;font-size:12px;color:#1e293b;border-right:1px solid #070b12;padding:9px 7px}
+.hm-legend{display:flex;gap:16px;flex-wrap:wrap;padding:8px 18px;background:#070b12;border-top:1px solid #1a2540}
+.lg-i{display:flex;align-items:center;gap:5px;font-size:11px;color:#4b5563}
+.lg-sq{width:11px;height:11px;border-radius:2px}
+
+/* ── Global chart ────────────────────────────────────────────────── */
+.gchart-wrap{background:#0a1020;border:1px solid #1a2540;border-radius:10px;padding:20px 22px;margin-bottom:24px}
+.gchart-ttl{font-size:14px;font-weight:600;color:#93c5fd;margin-bottom:4px}
+.gchart-note{font-size:11px;color:#374151;margin-bottom:14px}
+.gl-leg{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.gl-i{display:flex;align-items:center;gap:5px;font-size:11px;color:#64748b}
+.gl-sw{width:22px;height:3px;border-radius:2px}
+.gtbl-wrap{background:#0a1020;border:1px solid #1a2540;border-radius:10px;overflow:hidden;margin-bottom:24px}
+.gtbl-hdr{padding:10px 18px;font-size:11px;font-weight:600;color:#4b5563;text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid #1a2540}
+table.gtbl{width:100%;border-collapse:collapse;font-size:12px}
+table.gtbl thead th{background:#070b12;color:#4b5563;padding:7px 12px;text-align:right;font-weight:600;font-size:10px;text-transform:uppercase}
+table.gtbl thead th:first-child{text-align:left}
+table.gtbl tbody td{padding:6px 12px;text-align:right;border-bottom:1px solid #070b12}
+table.gtbl tbody td:first-child{text-align:left;color:#94a3b8}
+table.gtbl tbody tr:last-child td{border-bottom:none}
+
+svg text{font-family:'Inter',system-ui,sans-serif}
+
+/* ── Comparativo chart ───────────────────────────────────────────── */
+.cmp-wrap{background:#0a1020;border:1px solid #1a2540;border-radius:10px;overflow:hidden;margin-bottom:20px}
+.cmp-hdr{padding:12px 18px;border-bottom:1px solid #1a2540}
+.cmp-ttl{font-size:14px;font-weight:600;color:#93c5fd;margin-bottom:3px}
+.cmp-sub{font-size:11px;color:#374151}
+.cmp-stage-row{display:flex;align-items:center;gap:6px;padding:8px 18px;background:#070b12;border-bottom:1px solid #1a2540;flex-wrap:wrap}
+.cmp-slbl{font-size:10px;color:#374151;text-transform:uppercase;letter-spacing:.06em;margin-right:2px}
+.cmp-spill{padding:3px 10px;border-radius:12px;cursor:pointer;font-size:11px;font-weight:500;border:1px solid #1a2540;background:#0a1020;color:#4b5563;transition:.15s}
+.cmp-spill.active{background:#0f2b5c;color:#93c5fd;border-color:#2563eb}
+.cmp-ch-block{padding:14px 18px;border-bottom:1px solid #070b12}
+.cmp-ch-block:last-child{border-bottom:none}
+.cmp-ch-name{font-size:12px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.cmp-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.cmp-bar-cy{font-size:10px;font-weight:600;width:54px;flex-shrink:0;text-align:right}
+.cmp-bar-outer{flex:1;min-width:80px;height:20px;background:#070b12;border-radius:3px;overflow:hidden;position:relative}
+.cmp-bar-fill{height:100%;border-radius:3px}
+.cmp-bar-val{font-size:11px;font-weight:600;width:68px;flex-shrink:0;text-align:right}
+.cmp-delta{font-size:11px;font-weight:700;width:52px;flex-shrink:0;text-align:left;padding-left:4px}
+.cmp-delta.dn{color:#4ade80}
+.cmp-delta.up{color:#f87171}
+.cmp-delta.flat{color:#4b5563}
+.cmp-nodata{font-size:11px;color:#1e293b;font-style:italic;margin-left:4px}
+
+@media(max-width:768px){
+  .ctrl-row{flex-direction:column;align-items:flex-start;gap:10px}
+  .ctrl-grp{flex-wrap:wrap}
+  .dm-wrap,.hm-wrap,.gchart-wrap,.gtbl-wrap,.conv-strip,.cmp-wrap{overflow-x:auto}
+  .cs-bar-wrap{min-width:100px}
+  .cmp-bar-outer{min-width:60px}
+}
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a href="index.html" class="nav-brand"><img src="elisia-logo.webp" class="nav-logo" alt="Elisia Education Hub"></a>
+  <div class="nav-sep"></div>
+  <div class="nav-divider"></div>
+  <a href="funneles_ciclos.html" class="nav-link">01 · Funneles</a>
+  <a href="cpl_etapas.html" class="nav-link">02 · CPL Etapas</a>
+  <a href="canal_rentabilidad.html" class="nav-link active">03 · CPL Plataformas</a>
+  <a href="leads_perdidos.html" class="nav-link">04 · Leads Perdidos</a>
+</nav>
+
+<div class="page-body">
+
+<div class="page-header">
+  <h1>CPL Plataformas · EEH Planeación 2027</h1>
+  <div style="display:flex;align-items:center;gap:10px;margin:6px 0 4px">
+    <span id="corte-badge" style="background:#f59e0b22;border:1px solid #f59e0b;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700;color:#f59e0b;letter-spacing:.04em">📅 Corte: 24 jun 2026</span>
+    <span id="tr-badge" style="background:#3b82f622;border:1px solid #3b82f6;border-radius:6px;padding:3px 10px;font-size:11px;color:#93c5fd">TR: TR_Huge_062526.xlsx</span>
+  </div>
+  <p class="sub" id="canal-sub">CPL = Inversión MXN ÷ leads por etapa · OC filter · WhatsApp C.2026: Def D — LeadSource=whatsapp/ca_facebook_whatsapp OR utm_id=genjo OR LeadManagement="Validado por Genjo"</p>
+</div>
+
+<div class="tabs">
+  <div class="tab" onclick="setU('astate',this)">AState · Arkansas</div>
+  <div class="tab" onclick="setU('txstate',this)">TxState · Texas</div>
+  <div class="tab active" onclick="setU('eeh',this)">EEH · Combinado</div>
+</div>
+<div class="section" id="astate"></div>
+<div class="section" id="txstate"></div>
+<div class="section active" id="eeh"></div>
+
+<script>
+const CICLO_COLORS={'C.2024':'#94a3b8','C.2025':'#3b82f6','C.2026':'#f59e0b'};
+// Opción Y · 3 canales de pago (classify_channel de cpl_app.py) · sin TikTok · sin Genjo
+const CANAL_COLORS={'Google':'#4285F4','Meta':'#e879f9','WhatsApp':'#22c55e'};
+const STAGES=['Lead','Válido','Perfilado','Citado','Asistido','AdmFee','ITEP','DP'];
+const STAGES_S=['Lead','Válido','Perf','Citado','Asist','AdmFee','ITEP','DP'];
+const PAID_CHS=['Google','Meta','WhatsApp'];
+
+const CORTE_LABEL = '24 jun 2026';
+const TR_FILE     = 'TR_Huge_062526.xlsx';
+
+// TR_Huge_062526 (corte 24-jun) · scope Digital · 3 canales de pago classify_channel(cpl_app) · sin Genjo
+// Solo canales digitales de pago — sin Web/Campus/Orgánico
+// Google incluye Search + Pmax + YouTube combinados
+const DATA={
+  AState:{
+    channels:{
+      'Google': {'C.2025':[15168,2466,501,476,240,73,68,47],'C.2026':[5291,2155,325,271,147,42,34,26]},
+      'Meta': {'C.2025':[4153,1784,752,709,345,88,81,52],'C.2026':[7182,2698,928,771,402,72,57,33]},
+      'WhatsApp': {'C.2025':[2264,1505,433,406,217,46,44,30],'C.2026':[579,540,283,253,142,40,38,23]}
+    },
+    inv:{'C.2025':10621365,'C.2026':13566218},
+    total:{'C.2025':[428,1442,4109,4319,7770,27516,29586,45390],'C.2026':[850,1937,5373,6147,9968,38431,45221,66501]},
+    // Inversión real por canal (DATORAMA full cycle, mismo cálculo que cpl_app.py)
+    channelInv:{
+      'C.2025':{'Google':6192386,'Meta':3843039,'WhatsApp':585940},
+      'C.2026':{'Google':4354150,'Meta':7203017,'WhatsApp':2009050}
+    },
+  },
+  TxState:{
+    channels:{
+      'Google': {'C.2025':[5219,569,106,100,49,12,9,6],'C.2026':[572,227,60,47,26,3,3,1]},
+      'Meta': {'C.2025':[3061,1046,380,359,134,17,14,11],'C.2026':[6326,2314,447,379,121,13,13,9]},
+      'WhatsApp': {'C.2025':[1522,819,163,145,63,10,7,6],'C.2026':[182,154,88,81,36,5,4,1]}
+    },
+    inv:{'C.2025':6081691,'C.2026':6080463},
+    total:{'C.2025':[566,2230,7462,7950,18047,93564,114749,155941],'C.2026':[768,1931,7497,8674,19489,116932,135121,225202]},
+    // Inversión real por canal (DATORAMA full cycle, mismo cálculo que cpl_app.py)
+    channelInv:{
+      'C.2025':{'Google':2460798,'Meta':3325831,'WhatsApp':295061},
+      'C.2026':{'Google':1344889,'Meta':3600592,'WhatsApp':1134983}
+    },
+  },
+};
+
+// EEH = AState + TxState combinados
+function buildEEH(){
+  const chs=PAID_CHS;
+  const channels={};
+  chs.forEach(ch=>{
+    channels[ch]={};
+    ['C.2025','C.2026'].forEach(cy=>{
+      const dA=DATA.AState.channels[ch]?.[cy], dT=DATA.TxState.channels[ch]?.[cy];
+      if(!dA&&!dT){delete channels[ch]?.[cy]; return;}
+      const lA=Array.isArray(dA)?dA:dA?.leads||[],lT=Array.isArray(dT)?dT:dT?.leads||[];
+      channels[ch][cy]=Array(8).fill(0).map((_,i)=>(lA[i]||0)+(lT[i]||0));
+    });
+  });
+  const inv={'C.2025':DATA.AState.inv['C.2025']+DATA.TxState.inv['C.2025'],
+             'C.2026':DATA.AState.inv['C.2026']+DATA.TxState.inv['C.2026']};
+  // Inversión por canal EEH = AState + TxState (todos los ciclos con datos)
+  const channelInv={};
+  ['C.2025','C.2026'].forEach(cy=>{
+    channelInv[cy]={};
+    chs.forEach(ch=>{
+      const iA=DATA.AState.channelInv?.[cy]?.[ch]||0;
+      const iT=DATA.TxState.channelInv?.[cy]?.[ch]||0;
+      if(iA||iT) channelInv[cy][ch]=iA+iT;
+    });
+  });
+  // CPL global EEH: derivar leads totales de los arrays pre-calculados (incluye Web/orgánico)
+  // para que coincida con cpl_etapas.html (inv total ÷ todos los leads, no solo paid)
+  const total={};
+  ['C.2025','C.2026'].forEach(cy=>{
+    const invA=DATA.AState.inv[cy]||0, invT=DATA.TxState.inv[cy]||0;
+    const cA=DATA.AState.total[cy]||[], cT=DATA.TxState.total[cy]||[];
+    const totInv=invA+invT;
+    total[cy]=Array(8).fill(0).map((_,i)=>{
+      const lA=cA[i]>0?Math.round(invA/cA[i]):0;
+      const lT=cT[i]>0?Math.round(invT/cT[i]):0;
+      return (lA+lT)>0?Math.round(totInv/(lA+lT)):0;
+    });
+  });
+  return{channels,inv,total,channelInv};
+}
+const EEH=buildEEH();
+
+// Helper: inversión real por canal (Datorama) cuando disponible; fallback = total del ciclo
+function getChInv(univData, ch, cy){
+  return univData.channelInv?.[cy]?.[ch] ?? univData.inv?.[cy] ?? 0;
+}
+// Indica si hay inversión real para ese canal/ciclo
+function hasRealInv(univData, ch, cy){
+  return !!(univData.channelInv?.[cy]?.[ch]);
+}
+
+// Helper: get leads array (compatible with old {leads:[]} and new direct array formats)
+function getLeads(univData,ch,cy){
+  const d=univData.channels[ch]?.[cy]; if(!d) return null;
+  return Array.isArray(d)?d:d.leads||null;
+}
+function getCPL(leads,inv){return leads&&leads[0]>0?Math.round(inv/leads[0]):0;}
+function cplAt(leads,i,inv){return leads&&leads[i]>0?Math.round(inv/leads[i]):0;}
+function fmtMXN(v){return v>=1e6?`$${(v/1e6).toFixed(2)}M`:v>=1000?`$${Math.round(v/1000)}k`:`$${v}`;}
+function fmtPct(v){return `${v.toFixed(1)}%`;}
+
+// ── Delta background color ────────────────────────────────────────
+function dmBg(d){
+  if(d===null) return '#0a1020';
+  if(d<=-50) return '#041a0c';
+  if(d<=-25) return '#062010';
+  if(d<=-8)  return '#091a12';
+  if(d<=8)   return '#0a1020';
+  if(d<=25)  return '#1a0e0a';
+  if(d<=50)  return '#200f0a';
+  return '#1f0808';
+}
+
+// ── Delta Matrix (vista Todos: compara C.2025 → C.2026) ──────────
+function buildDeltaMatrix(univData){
+  const inv25=univData.inv['C.2025']||0, inv26=univData.inv['C.2026']||0;
+  if(!inv25||!inv26) return '<p style="color:#374151;padding:16px">Sin datos comparativos.</p>';
+  const hasReal26 = !!(univData.channelInv?.['C.2026']);
+
+  let h=`<div class="dm-wrap">
+    <div class="dm-title">
+      <span class="dm-ttl">Delta CPL · C.2025 → C.2026 · por etapa del funnel</span>
+      <span class="dm-sub">▼ verde = CPL bajó (mejor) · ▲ rojo = CPL subió (peor) · C.2026: inversión Datorama real por canal · C.2025: estimación Datorama por canal (nota: suma G+M+WA excede total AState en ~8%; usar como indicativo, no como cifra exacta)</span>
+    </div>
+    <div class="dm-legend">
+      <div class="dm-li"><div class="dm-sq" style="background:#062010"></div>Mejoró &gt;25%</div>
+      <div class="dm-li"><div class="dm-sq" style="background:#091a12"></div>Mejoró</div>
+      <div class="dm-li"><div class="dm-sq" style="background:#0a1020"></div>Sin cambio</div>
+      <div class="dm-li"><div class="dm-sq" style="background:#1a0e0a"></div>Empeoró</div>
+      <div class="dm-li"><div class="dm-sq" style="background:#1f0808"></div>Empeoró &gt;50%</div>
+      <div class="dm-li" style="margin-left:8px"><span style="color:#1e3a5f">Gris = sin base C.2025</span></div>
+    </div>
+    <div style="overflow-x:auto">
+    <table class="dm">
+      <thead><tr>
+        <th>Canal</th>`;
+  STAGES_S.forEach(s=>h+=`<th>${s}</th>`);
+  h+=`</tr></thead><tbody>`;
+
+  PAID_CHS.forEach(ch=>{
+    const l25=getLeads(univData,ch,'C.2025'), l26=getLeads(univData,ch,'C.2026');
+    if(!l25&&!l26) return;
+    const clr=CANAL_COLORS[ch]||'#94a3b8';
+    const baseBaja=!l25||l25[0]<80;
+    const chLabel=ch==='Google Pmax'?'Pmax · YouTube':ch;
+    h+=`<tr><td class="dm-ch"><span style="color:${clr}">●</span>${chLabel}</td>`;
+
+    STAGES.forEach((st,i)=>{
+      const chi25=getChInv(univData,ch,'C.2025');
+      const chi26=getChInv(univData,ch,'C.2026');
+      if(baseBaja){
+        const v26=l26?.[i]||0;
+        // Sin inversión real por canal → no mostrar CPL ficticio
+        if(!hasRealInv(univData,ch,'C.2026')){
+          h+=`<td class="dm-cell" style="background:#07090f"><span style="font-size:9px;color:#374151">sin inv.</span></td>`;return;
+        }
+        const c26=v26>0?Math.round(chi26/v26):0;
+        if(!c26){h+=`<td class="dm-cell" style="background:#07090f"><span class="dm-base">—</span></td>`;return;}
+        h+=`<td class="dm-cell" style="background:#0c1225">
+          <div class="dm-new-lbl" style="font-size:9px;color:#1e3a5f;text-transform:uppercase">C.2026</div>
+          <div style="font-size:13px;font-weight:600;color:#4b5563;margin-top:2px">${fmtMXN(c26)}</div>
+          <div style="font-size:9px;color:#1e3a5f;margin-top:2px">${v26.toLocaleString()} leads</div>
+        </td>`;return;
+      }
+      const v25=l25[i]||0, v26=l26?.[i]||0;
+      const c25=v25>0?Math.round(chi25/v25):0;
+      const c26=v26>0?Math.round(chi26/v26):0;
+      if(!c25&&!c26){h+=`<td class="dm-cell" style="background:#07090f">—</td>`;return;}
+      if(!c25||!c26){
+        const cv=c25||c26;
+        h+=`<td class="dm-cell" style="background:#0a1020"><span style="color:#374151">${fmtMXN(cv)}</span></td>`;return;
+      }
+      const d=Math.round((c26-c25)/c25*100);
+      const bg=dmBg(d);
+      const arrowCls=d<0?'dm-dn':d>0?'dm-up':'dm-flat';
+      const arrow=d<0?'▼':d>0?'▲':'—';
+      h+=`<td class="dm-cell" style="background:${bg}">
+        <div class="dm-pct ${arrowCls}">${arrow}${Math.abs(d)}%</div>
+        <div class="dm-mini">${fmtMXN(c25)}→${fmtMXN(c26)}</div>
+      </td>`;
+    });
+    h+=`</tr>`;
+  });
+  h+=`</tbody></table></div></div>`;
+
+  // Conversion quality strip
+  h+=`<div class="conv-strip">
+    <div class="cs-ttl">Calidad de conversión · % Lead → DP por canal</div>`;
+
+  const maxR=Math.max(...PAID_CHS.map(ch=>{
+    const l25=getLeads(univData,ch,'C.2025'), l26=getLeads(univData,ch,'C.2026');
+    return Math.max(l25&&l25[0]>0?l25[7]/l25[0]*100:0, l26&&l26[0]>0?l26[7]/l26[0]*100:0);
+  }).filter(v=>v>0))||1;
+
+  PAID_CHS.forEach(ch=>{
+    const l25=getLeads(univData,ch,'C.2025'), l26=getLeads(univData,ch,'C.2026');
+    const r25=l25&&l25[0]>0?l25[7]/l25[0]*100:0;
+    const r26=l26&&l26[0]>0?l26[7]/l26[0]*100:0;
+    if(!r25&&!r26) return;
+    const clr=CANAL_COLORS[ch]||'#94a3b8';
+    const barW25=Math.round(r25/maxR*100), barW26=Math.round(r26/maxR*100);
+    const dr=r25>0?Math.round((r26-r25)/r25*100):null;
+    const arrCls=dr===null?'':dr>0?'up':'dn';
+    const chLabel=ch==='Google Pmax'?'Pmax':ch;
+    h+=`<div class="cs-row">
+      <div class="cs-ch" style="color:${clr}"><span style="font-size:10px">●</span> ${chLabel}</div>
+      <div class="cs-bar-wrap">
+        ${r25>0?`<div class="cs-bar25" style="width:${barW25}%;background:${clr}"></div>`:''}
+        ${r26>0?`<div class="cs-bar26" style="width:${barW26}%;background:${clr}"></div>`:''}
+      </div>
+      <div class="cs-labels">
+        ${r25>0?`<span class="cs-val25">${r25.toFixed(2)}%</span>`:''}
+        ${r25>0&&r26>0?`<span style="color:#1e3a5f">→</span>`:''}
+        ${r26>0?`<span class="cs-val26" style="color:${clr}">${r26.toFixed(2)}%</span>`:''}
+        ${dr!==null?`<span class="cs-arr ${arrCls}">${dr>0?'▲':'▼'}${Math.abs(dr)}%</span>`:''}
+      </div>
+    </div>`;
+  });
+  h+=`</div>`;
+  return h;
+}
+
+// ── Single-cycle heatmap ──────────────────────────────────────────
+function heatClr(t){
+  const c=t<.5?[[74,222,128],[251,191,36]]:[[251,191,36],[248,113,113]];
+  const s=t<.5?t*2:(t-.5)*2;
+  return`rgb(${Math.round(c[0][0]+(c[1][0]-c[0][0])*s)},${Math.round(c[0][1]+(c[1][1]-c[0][1])*s)},${Math.round(c[0][2]+(c[1][2]-c[0][2])*s)})`;
+}
+function buildHeatmap(univData,ciclo){
+  const entries=PAID_CHS.map(ch=>{
+    const l=getLeads(univData,ch,ciclo); if(!l||!l[0]) return null;
+    const real=hasRealInv(univData,ch,ciclo);
+    if(!real) return null; // Sin inversión Datorama por canal → CPL no confiable
+    const ci=getChInv(univData,ch,ciclo);
+    const cpl=l.map(v=>v>0?Math.round(ci/v):0);
+    const r=l[7]/l[0]*100;
+    return{ch,cpl,leads:l,r,real};
+  }).filter(Boolean);
+  if(!entries.length) return '<p style="color:#374151;padding:16px">Sin datos.</p>';
+
+  const mins=Array(8).fill(Infinity), maxs=Array(8).fill(0);
+  entries.forEach(e=>e.cpl.forEach((v,i)=>{if(v>0){mins[i]=Math.min(mins[i],v);maxs[i]=Math.max(maxs[i],v);}}));
+  const rVals=entries.map(e=>e.r).filter(v=>v>0);
+  const rMin=Math.min(...rVals)||0, rMax=Math.max(...rVals)||1;
+
+  let h=`<div class="hm-wrap">
+    <div class="hm-header">
+      <div class="hm-ttl">Mapa de calor · CPL por canal · ${ciclo}</div>
+      <div class="hm-note">Verde = CPL más bajo (mejor) · Rojo = más alto · Comparación relativa entre canales en cada columna</div>
+    </div>
+    <div style="overflow-x:auto"><table class="hm">
+      <thead><tr><th>Canal</th>`;
+  STAGES_S.forEach(s=>h+=`<th>${s}</th>`);
+  h+=`<th>L→DP</th></tr></thead><tbody>`;
+
+  entries.forEach(e=>{
+    const clr=CANAL_COLORS[e.ch]||'#94a3b8';
+    const lbl=e.ch==='Google Pmax'?'Pmax':e.ch;
+    const tag=e.real?'':' <span style="color:#374151;font-size:8px">est.</span>';
+    h+=`<tr><td class="hm-ch"><span style="color:${clr}">●</span>${lbl}${tag}</td>`;
+    e.cpl.forEach((v,i)=>{
+      if(!v||maxs[i]===0){h+=`<td class="hm-dash">—</td>`;return;}
+      const norm=maxs[i]===mins[i]?0.5:(v-mins[i])/(maxs[i]-mins[i]);
+      const bg=heatClr(norm);
+      h+=`<td class="hm-cell" style="background:${bg}18;border-bottom:3px solid ${bg}50">
+        <span style="color:${bg}">${fmtMXN(v)}</span>
+        <span class="hm-sub">${e.leads[i].toLocaleString()}</span>
+      </td>`;
+    });
+    if(e.r>0){
+      const norm=rMax===rMin?0.5:1-(e.r-rMin)/(rMax-rMin);
+      const bg=heatClr(norm);
+      h+=`<td class="hm-cell" style="background:${bg}18;border-bottom:3px solid ${bg}50"><span style="color:${bg}">${e.r.toFixed(2)}%</span></td>`;
+    } else h+=`<td class="hm-dash">—</td>`;
+    h+=`</tr>`;
+  });
+  h+=`</tbody></table>
+    <div class="hm-legend">
+      <div class="lg-i"><div class="lg-sq" style="background:#4ade80"></div>Más barato</div>
+      <div class="lg-i"><div class="lg-sq" style="background:#fbbf24"></div>Intermedio</div>
+      <div class="lg-i"><div class="lg-sq" style="background:#f87171"></div>Más caro</div>
+      <div class="lg-i" style="margin-left:8px;color:#374151">Último col = % Lead→DP</div>
+    </div>
+  </div></div>`;
+  return h;
+}
+
+// ── Global CPL line chart ─────────────────────────────────────────
+function buildGlobalChart(totalData){
+  const ciclos=Object.keys(totalData).filter(c=>totalData[c]);
+  const W=720,H=210,PL=58,PR=20,PT=26,PB=34,MID=330;
+  const CW_L=MID-PL,CW_R=W-PR-MID,CH=H-PT-PB;
+  let maxL=0,maxR=0;
+  ciclos.forEach(c=>{const a=totalData[c];[0,1,2,3].forEach(i=>{if(a[i]>maxL)maxL=a[i];});[3,4,5,6,7].forEach(i=>{if(a[i]>maxR)maxR=a[i];});});
+  maxL=Math.ceil(maxL*1.12);maxR=Math.ceil(maxR*1.12);
+  const xL=i=>PL+i*(CW_L/3),xR=i=>MID+i*(CW_R/4);
+  const yL=v=>v?PT+CH-(v/maxL)*CH:null,yR=v=>v?PT+CH-(v/maxR)*CH:null;
+  const fK=v=>v>=1e6?`${(v/1e6).toFixed(1)}M`:v>=1000?`${Math.round(v/1000)}k`:`${v}`;
+  let s=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block;overflow:visible">`;
+  [.25,.5,.75,1].forEach(f=>{
+    const yl=PT+CH-f*CH;
+    s+=`<line x1="${PL}" y1="${yl}" x2="${MID}" y2="${yl}" stroke="#0f1e35" stroke-width="1"/>`;
+    s+=`<text x="${PL-4}" y="${yl+4}" text-anchor="end" font-size="9" fill="#374151">${fK(Math.round(maxL*f))}</text>`;
+    s+=`<line x1="${MID}" y1="${yl}" x2="${W-PR}" y2="${yl}" stroke="#0f1e35" stroke-width="1"/>`;
+    s+=`<text x="${W-PR+3}" y="${yl+4}" font-size="9" fill="#374151">${fK(Math.round(maxR*f))}</text>`;
+  });
+  s+=`<text x="${PL+(MID-PL)/2}" y="${PT-10}" text-anchor="middle" font-size="9" fill="#1e3a5f" font-weight="600">ADQUISICIÓN</text>`;
+  s+=`<text x="${MID+(W-PR-MID)/2}" y="${PT-10}" text-anchor="middle" font-size="9" fill="#1e3a5f" font-weight="600">CONVERSIÓN PROFUNDA</text>`;
+  s+=`<line x1="${MID}" y1="${PT-6}" x2="${MID}" y2="${H-PB}" stroke="#1e3a5f" stroke-width="1.5" stroke-dasharray="4,3"/>`;
+  ['Lead','Válido','Perf','Citado'].forEach((n,i)=>s+=`<text x="${xL(i)}" y="${H-PB+14}" text-anchor="middle" font-size="9" fill="#4b5563">${n}</text>`);
+  ['Citado','Asist','AdmFee','ITEP','DP'].forEach((n,i)=>s+=`<text x="${xR(i)}" y="${H-PB+14}" text-anchor="middle" font-size="9" fill="#4b5563">${n}</text>`);
+  ciclos.forEach(c=>{
+    const arr=totalData[c],clr=CICLO_COLORS[c]||'#94a3b8';
+    const lp=[0,1,2,3].map((si,xi)=>({x:xL(xi),y:yL(arr[si]),v:arr[si]})).filter(p=>p.y);
+    if(lp.length>1){
+      s+=`<path d="${lp.map((p,i)=>`${i===0?'M':'L'}${p.x},${p.y}`).join(' ')}" stroke="${clr}" stroke-width="1.5" fill="none"/>`;
+      lp.forEach((p,i)=>{s+=`<circle cx="${p.x}" cy="${p.y}" r="3" fill="${clr}"/>`;if(i===0||i===lp.length-1)s+=`<text x="${p.x}" y="${p.y-8}" text-anchor="middle" font-size="9" fill="${clr}">${fK(p.v)}</text>`;});
+    }
+    const rp=[3,4,5,6,7].map((si,xi)=>({x:xR(xi),y:yR(arr[si]),v:arr[si]})).filter(p=>p.y);
+    if(rp.length>1){
+      s+=`<path d="${rp.map((p,i)=>`${i===0?'M':'L'}${p.x},${p.y}`).join(' ')}" stroke="${clr}" stroke-width="1.5" fill="none"/>`;
+      rp.forEach((p,i)=>{s+=`<circle cx="${p.x}" cy="${p.y}" r="3" fill="${clr}"/>`;if(i===0||i===rp.length-1)s+=`<text x="${p.x}" y="${p.y-8}" text-anchor="middle" font-size="9" fill="${clr}">${fK(p.v)}</text>`;});
+    }
+  });
+  const legY=H-PB+28;
+  ciclos.forEach((c,i)=>{const clr=CICLO_COLORS[c]||'#94a3b8';s+=`<rect x="${PL+i*90}" y="${legY}" width="18" height="3" rx="1" fill="${clr}"/><text x="${PL+i*90+22}" y="${legY+4}" font-size="10" fill="${clr}">${c}</text>`;});
+  return s+`</svg>`;
+}
+function buildGlobalTable(totalData){
+  const ciclos=Object.keys(totalData).filter(c=>totalData[c]);
+  const fMXN=v=>v>=1e6?`$${(v/1e6).toFixed(2)}M`:v>=1000?`$${Math.round(v/1000)}k`:`$${v}`;
+  let h=`<table class="gtbl"><thead><tr><th>Etapa</th>`;
+  ciclos.forEach(c=>h+=`<th style="color:${CICLO_COLORS[c]||'#94a3b8'}">${c}</th>`);
+  if(ciclos.length>=2) h+=`<th>${ciclos[ciclos.length-2].replace('C.','')}→${ciclos[ciclos.length-1].replace('C.','')}</th>`;
+  h+=`</tr></thead><tbody>`;
+  STAGES.forEach((sn,si)=>{
+    const vals=ciclos.map(c=>totalData[c]?.[si]||0);
+    h+=`<tr><td>${sn}</td>`;
+    vals.forEach(v=>h+=`<td>${v?fMXN(v):'—'}</td>`);
+    if(ciclos.length>=2&&vals[0]&&vals[vals.length-1]){
+      const d=Math.round((vals[vals.length-1]-vals[vals.length-2])/vals[vals.length-2]*100);
+      h+=`<td style="color:${d<0?'#4ade80':'#f87171'};font-weight:600">${d<0?'▼':'▲'} ${Math.abs(d)}%</td>`;
+    } else h+=`<td style="color:#374151">—</td>`;
+    h+=`</tr>`;
+  });
+  return h+`</tbody></table>`;
+}
+
+// ── Comparativo chart ────────────────────────────────────────────
+const COMP_STAGE={astate:0,txstate:0,eeh:0};
+
+function buildComparativo(univData,uid,stageIdx){
+  stageIdx=stageIdx||COMP_STAGE[uid]||0;
+  const ALL_CY=['C.2024','C.2025','C.2026'];
+  // Ciclos que tienen al menos un canal con datos
+  const availCy=ALL_CY.filter(cy=>PAID_CHS.some(ch=>{const l=getLeads(univData,ch,cy);return l&&l[stageIdx]>0;}));
+  if(availCy.length===0) return '<p style="color:#374151;padding:16px">Sin datos.</p>';
+
+  // CPL por canal × ciclo en etapa stageIdx
+  const cplD={};
+  PAID_CHS.forEach(ch=>{
+    cplD[ch]={};
+    availCy.forEach(cy=>{
+      const l=getLeads(univData,ch,cy);
+      if(!l||!l[stageIdx]) return;
+      const inv=getChInv(univData,ch,cy);
+      cplD[ch][cy]=Math.round(inv/l[stageIdx]);
+    });
+  });
+
+  // Escala global
+  const allVals=Object.values(cplD).flatMap(d=>Object.values(d)).filter(v=>v>0);
+  const maxCPL=Math.max(...allVals,1);
+
+  // Selectores de etapa
+  let h=`<div class="cmp-wrap">
+  <div class="cmp-hdr">
+    <div class="cmp-ttl">CPL por canal · comparativo de ciclos</div>
+    <div class="cmp-sub">Inversión Datorama por canal ÷ leads en cada etapa · ▼ verde = mejoró · ▲ rojo = empeoró</div>
+  </div>
+  <div class="cmp-stage-row"><span class="cmp-slbl">Etapa:</span>`;
+  STAGES_S.forEach((s,i)=>{
+    h+=`<div class="cmp-spill${i===stageIdx?' active':''}" onclick="setCmpStage('${uid}',${i})">${s}</div>`;
+  });
+  h+=`</div>`;
+
+  // Barra por canal
+  PAID_CHS.forEach(ch=>{
+    const chD=cplD[ch];
+    const cyCnt=Object.keys(chD).length;
+    if(!cyCnt) return;
+    const clr=CANAL_COLORS[ch]||'#94a3b8';
+    h+=`<div class="cmp-ch-block">
+      <div class="cmp-ch-name" style="color:${clr}"><span style="font-size:14px">●</span>${ch}</div>`;
+
+    availCy.forEach((cy,cyIdx)=>{
+      const val=chD[cy];
+      const cyClr=CICLO_COLORS[cy]||'#94a3b8';
+      const barW=val?Math.round(val/maxCPL*92):0;
+
+      // Delta respecto al ciclo anterior disponible
+      let deltaHtml='<span></span>';
+      if(cyIdx>0){
+        const prev=availCy.slice(0,cyIdx).reverse().find(pcy=>chD[pcy]);
+        if(prev&&val&&chD[prev]){
+          const d=Math.round((val-chD[prev])/chD[prev]*100);
+          const cls=d<0?'dn':d>0?'up':'flat';
+          deltaHtml=`<span class="cmp-delta ${cls}">${d<0?'▼':'▲'}${Math.abs(d)}%</span>`;
+        } else {
+          deltaHtml=`<span class="cmp-delta flat">—</span>`;
+        }
+      } else {
+        deltaHtml=`<span class="cmp-delta flat" style="color:#0a1020">·</span>`;
+      }
+
+      h+=`<div class="cmp-bar-row">
+        <div class="cmp-bar-cy" style="color:${cyClr}">${cy}</div>
+        <div class="cmp-bar-outer">
+          ${val?`<div class="cmp-bar-fill" style="width:${barW}%;background:${cyClr};opacity:.8"></div>`:''}
+        </div>
+        <div class="cmp-bar-val" style="color:${val?cyClr:'#1e293b'}">${val?fmtMXN(val):'—'}</div>
+        ${deltaHtml}
+      </div>`;
+    });
+    h+=`</div>`;
+  });
+  h+=`</div>`;
+
+  // Tabla resumen
+  h+=`<div class="gtbl-wrap">
+    <div class="gtbl-hdr">CPL · ${STAGES[stageIdx]} · todos los canales y ciclos</div>
+    <div style="overflow-x:auto"><table class="gtbl"><thead><tr><th>Canal</th>`;
+  availCy.forEach(cy=>h+=`<th>${cy}</th>`);
+  for(let i=1;i<availCy.length;i++) h+=`<th>Δ ${availCy[i-1].slice(2)}→${availCy[i].slice(2)}</th>`;
+  h+=`</tr></thead><tbody>`;
+
+  PAID_CHS.forEach(ch=>{
+    const vals=availCy.map(cy=>cplD[ch][cy]||null);
+    if(vals.every(v=>!v)) return;
+    const clr=CANAL_COLORS[ch]||'#94a3b8';
+    h+=`<tr><td style="color:${clr};font-weight:600">● ${ch}</td>`;
+    vals.forEach(v=>h+=`<td style="color:${v?'#94a3b8':'#1e293b'}">${v?fmtMXN(v):'—'}</td>`);
+    for(let i=1;i<availCy.length;i++){
+      const prev=vals[i-1],curr=vals[i];
+      if(prev&&curr){const d=Math.round((curr-prev)/prev*100);h+=`<td style="color:${d<0?'#4ade80':'#f87171'};font-weight:600">${d<0?'▼':'▲'}${Math.abs(d)}%</td>`;}
+      else h+=`<td style="color:#1e293b">—</td>`;
+    }
+    h+=`</tr>`;
+  });
+  h+=`</tbody></table></div></div>`;
+  return h;
+}
+
+function setCmpStage(uid,idx){
+  COMP_STAGE[uid]=idx;
+  const uD=getUnivData(uid);
+  document.getElementById(`content-${uid}`).innerHTML=buildComparativo(uD,uid,idx);
+}
+
+// ── Estado + render ───────────────────────────────────────────────
+const ST={astate:{ciclo:'C.2026'},txstate:{ciclo:'C.2026'},eeh:{ciclo:'Comparativo'}};
+
+function getUnivData(uid){return uid==='astate'?DATA.AState:uid==='txstate'?DATA.TxState:EEH;}
+
+function renderContent(uid){
+  const uD=getUnivData(uid), {ciclo}=ST[uid];
+  const el=document.getElementById(`content-${uid}`);
+  if(ciclo==='Comparativo'){
+    el.innerHTML=buildComparativo(uD,uid);
+  } else {
+    const leg=Object.keys(uD.total).filter(c=>uD.total[c]).map(c=>`<div class="gl-i"><div class="gl-sw" style="background:${CICLO_COLORS[c]||'#94a3b8'}"></div>${c}</div>`).join('');
+    el.innerHTML=buildHeatmap(uD,ciclo)+`
+      <div class="gchart-wrap">
+        <div class="gchart-ttl">CPL Global · todos los canales combinados</div>
+        <div class="gchart-note">Inversión total ÷ leads totales por etapa</div>
+        <div class="gl-leg">${leg}</div>
+        ${buildGlobalChart(uD.total)}
+      </div>
+      <div class="gtbl-wrap">
+        <div class="gtbl-hdr">CPL por etapa en MXN — comparativo por ciclo</div>
+        ${buildGlobalTable(uD.total)}
+      </div>`;
+  }
+}
+
+function renderSection(uid){
+  const uD=getUnivData(uid);
+  const name=uid==='astate'?'Arkansas State · AState':uid==='txstate'?'Texas State · TxState':'EEH · AState + TxState';
+  const ciclosDisp=Object.keys(uD.total).filter(c=>uD.total[c]);
+  document.getElementById(uid).innerHTML=`
+    <h2 style="font-size:13px;color:#64748b;font-weight:500;margin-bottom:14px">${name} · OC filter · ambas universidades</h2>
+    <div class="ctrl-row">
+      <div class="ctrl-grp">
+        <span class="ctrl-lbl">Ciclo:</span>
+        ${ciclosDisp.map(c=>`<div class="pill${ST[uid].ciclo===c?' active':''}" onclick="setCiclo('${uid}','${c}',this)">${c}</div>`).join('')}
+        <div class="pill${ST[uid].ciclo==='Comparativo'?' active':''}" onclick="setCiclo('${uid}','Comparativo',this)">Comparativo</div>
+      </div>
+    </div>
+    <div id="content-${uid}"></div>`;
+  renderContent(uid);
+}
+
+function setU(id,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+function setCiclo(uid,ciclo,el){
+  ST[uid].ciclo=ciclo;
+  document.getElementById(uid).querySelectorAll('.ctrl-grp .pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  renderContent(uid);
+}
+
+renderSection('astate');
+renderSection('txstate');
+renderSection('eeh');
+
+// Actualizar textos estáticos con constantes dinámicas
+const _cb=document.getElementById('corte-badge'); if(_cb) _cb.textContent=`📅 Corte: ${CORTE_LABEL}`;
+const _tb=document.getElementById('tr-badge');    if(_tb) _tb.textContent=`TR: ${TR_FILE}`;
+const _cs=document.getElementById('canal-sub');   if(_cs) _cs.textContent=`CPL = Inversión MXN ÷ leads por etapa · OC filter · Fuente: ${TR_FILE} · Corte: ${CORTE_LABEL} · WhatsApp C.2026: Def D`;
+const _cf=document.getElementById('canal-footer');if(_cf) _cf.textContent=`CPL = Inversión MXN ÷ Leads OC filter · Fuente: ${TR_FILE} · Corte ${CORTE_LABEL}`;
+</script>
+
+</div><!-- end .page-body -->
+
+<div class="page-notes">
+  <div class="pn-title">Notas metodológicas</div>
+  <div class="pn-grid">
+    <div class="pn-item">
+      <div class="pn-tag" style="color:#93c5fd">📊 CPL por canal — dos métricas distintas</div>
+      <div class="pn-body"><strong>Vista "Comparativo":</strong> CPL por canal × ciclo (C.2024/C.2025/C.2026) con barras proporcionales. Selector de etapa (Lead a DP). Δ = variación entre ciclos consecutivos disponibles.<br><strong>Heatmap por ciclo:</strong> C.2026 usa inversión real Datorama por canal. C.2025/C.2024 usan inversión del v4 (fuente Datorama donde disponible).</div>
+    </div>
+    <div class="pn-item">
+      <div class="pn-tag" style="color:#4285F4">🔵 Google — Search + Pmax + YouTube</div>
+      <div class="pn-body">El canal Google combina Search, Performance Max y YouTube en un solo número. En C.2026, Pmax fue la campaña dominante (3,562 de 4,922 leads AState). La inversión Datorama C.2026 incluye los tres tipos.</div>
+    </div>
+    <div class="pn-item amber">
+      <div class="pn-tag" style="color:#fbbf24">📱 WhatsApp · contexto</div>
+      <div class="pn-body">El CPL/Lead de WA subió porque el volumen bajó ↓75% (2,920→738 leads EEH) con la misma inversión. Sin embargo, la tasa de conversión Lead→DP mejoró de 1.2% a 3.1%: menos leads, pero de mayor calidad e intención.</div>
+    </div>
+  </div>
+</div>
+<div class="page-footer">
+  <span>EEH · Planeación 2027 · CourtAvenue / Velocity AI</span>
+  <span id="canal-footer">CPL = Inversión MXN ÷ Leads OC filter · Corte 31 mayo por ciclo</span>
+</div>
+</body>
+</html>

@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CPL por Etapa — Evolución C.2024 / C.2025 / C.2026</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+/* Stage comparison grid */
+.stage-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:22px; }
+.s-card { background:#0e1520; border:1px solid #1a2540; border-radius:10px; padding:12px 14px; }
+.s-name { font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;
+          letter-spacing:.07em; margin-bottom:10px; }
+.s-row  { display:flex; align-items:center; gap:6px; margin-bottom:5px; }
+.s-ciclo { font-size:10px; font-weight:700; width:40px; flex-shrink:0; }
+.s-bar-wrap { flex:1; display:flex; align-items:center; gap:6px; }
+.s-bar { height:14px; border-radius:3px; min-width:3px; }
+.s-val { font-size:11px; font-weight:700; white-space:nowrap; }
+
+/* Channel toggle */
+.ch-toggle { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:14px; }
+.cht { padding:5px 14px; background:#0a1020; color:#64748b; border:1px solid #1a2540;
+       border-radius:6px; cursor:pointer; font-size:12px; font-weight:500;
+       transition:.15s; font-family:inherit; }
+.cht:hover { border-color:#2563eb; color:#93c5fd; }
+.cht.active { background:#0f2b5c; border-color:#2563eb; color:#93c5fd; font-weight:700; }
+
+@media(max-width:768px){
+  .stage-grid{grid-template-columns:1fr 1fr}
+  .chart-wrap{padding:14px 12px}
+  .legend{gap:10px}
+}
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a href="index.html" class="nav-brand"><img src="elisia-logo.webp" class="nav-logo" alt="Elisia Education Hub"></a>
+  <div class="nav-sep"></div>
+  <div class="nav-divider"></div>
+  <a href="funneles_ciclos.html" class="nav-link">01 · Funneles</a>
+  <a href="cpl_etapas.html" class="nav-link active">02 · CPL Etapas</a>
+  <a href="canal_rentabilidad.html" class="nav-link">03 · CPL Plataformas</a>
+  <a href="leads_perdidos.html" class="nav-link">04 · Leads Perdidos</a>
+</nav>
+
+<div class="page-body">
+
+<div class="page-header">
+  <h1>CPL por Etapa de Funnel — AState &amp; TxState</h1>
+  <div style="display:flex;align-items:center;gap:10px;margin:6px 0 4px">
+    <span id="corte-badge" style="background:#f59e0b22;border:1px solid #f59e0b;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700;color:#f59e0b;letter-spacing:.04em">📅 Corte: 24 jun 2026</span>
+    <span id="tr-badge" style="background:#3b82f622;border:1px solid #3b82f6;border-radius:6px;padding:3px 10px;font-size:11px;color:#93c5fd">TR: TR_Huge_062526.xlsx</span>
+  </div>
+  <p class="sub" id="cpl-sub">Costo por lead en cada etapa de conversión · Inversión MXN ÷ # de registros · C.2026: Track Report all_track_2026.xlsx · WA def D (LeadSource WA + utm_id=genjo + LeadManagement=Genjo) · 8 jun 2026</p>
+</div>
+
+<div class="tabs">
+  <div class="tab" onclick="show('astate',this)">AState · Arkansas</div>
+  <div class="tab" onclick="show('txstate',this)">TxState · Texas</div>
+  <div class="tab active" onclick="show('eeh',this)" style="position:relative">
+    EEH · Combinado
+    <span style="position:absolute;top:-8px;right:-6px;background:#f59e0b;color:#000;font-size:9px;font-weight:800;padding:1px 5px;border-radius:8px;letter-spacing:.04em">TOTAL</span>
+  </div>
+</div>
+
+<div id="astate" class="section"></div>
+<div id="txstate" class="section"></div>
+<div id="eeh" class="section active"></div>
+
+<script>
+/* ─── DATA ─────────────────────────────────────────────────────────── */
+// CPL[canal][ciclo] = array de 8 valores (Lead→DP)
+// null = sin datos o leads=0
+// CURVA reconstruida (26-jun) desde el funnel REAL de TR_Huge scope Digital (4 canales),
+// no del shape viejo de 7 canales. Total = inv_total ÷ leads_reales[etapa] (exacto).
+// Por canal: endpoint DP preservado (reconciliado con NI redistribuido / pág 03) y la
+// forma intermedia tomada del funnel real. Recalcula: cpl_curve_rebuild.py.
+
+const SN = ['Lead','Valid','Perf','Cit','Asist','AdmFee','ITEP','DP'];
+
+// CPL por canal: channelInv(Datorama) ÷ leads por etapa
+// WA C.2026 = def D: LeadSource WA/ca_fb_wa OR utm_id=genjo OR LeadManagement="Validado por Genjo"
+// AState WA C.2026: 1,883 leads, $1,423,226 inv → CPL/Lead $756 (vs $1,405 con def B)
+// TxState WA C.2026: 875 leads, $741,976 inv → CPL/Lead $848
+const ASTATE = {
+  channels: {
+    'Google': {
+      'C.2024': [6473,10005,26013,26381,35175,94793,101687,133161],
+      'C.2025': [211,1297,6384,6719,13326,43812,47033,68048],
+      'C.2026': [208,510,3382,4056,7477,26169,32326,42273],
+    },
+    'Meta': {
+      'C.2024': [852,1696,5446,5677,11554,47434,53806,85833],
+      'C.2025': [1027,2391,5671,6015,12362,48465,52654,82018],
+      'C.2026': [920,2449,7121,8572,16439,91787,115941,200262],
+    },
+    'WhatsApp': {
+      'C.2025': [1956,2943,10229,10909,20410,96282,100659,147633],
+      'C.2026': [15910,17059,32552,36411,64874,230302,242423,400525],
+    },
+  },
+  total: {
+    // Inversión total ÷ leads REALES por etapa · TR_Huge_062526.xlsx scope Digital (4 canales) · Datorama actuals
+    'C.2024': [948,1496,4849,4987,8091,24401,27571,37098],
+    'C.2025': [426,1436,4091,4301,7737,27399,29460,45197],
+    'C.2026': [850,1937,5373,6147,9968,38431,45221,66501],
+  },
+  inv: { 'C.2024':7753583, 'C.2025':10621365, 'C.2026':13566218 },
+};
+
+const TXSTATE = {
+  channels: {
+    'Google': {
+      'C.2025': [166,1526,8194,8685,17725,72376,96502,144753],
+      'C.2026': [336,846,3202,4088,7390,64042,64042,192127],
+    },
+    'Meta': {
+      'C.2025': [1001,2929,8063,8534,22864,180225,218845,278530],
+      'C.2026': [481,1316,6811,8032,25159,234177,234177,338255],
+    },
+    'WhatsApp': {
+      // TxState WA C.2025 omitido: sin inversión Datorama WA desglosada para C.2025
+      'C.2026': [3899,4608,8063,8760,19710,141912,177390,709558],
+    },
+  },
+  total: {
+    // Inversión total ÷ leads REALES por etapa · TR_Huge_062526.xlsx scope Digital (4 canales) · Datorama actuals
+    'C.2025': [566,2230,7462,7950,18047,93565,114749,155941],
+    'C.2026': [768,1931,7497,8674,19489,116932,135121,225202],
+  },
+  inv: { 'C.2025':6081691, 'C.2026':6080463 },
+};
+
+const CICLO_COLORS = { 'C.2024':'#94a3b8', 'C.2025':'#3b82f6', 'C.2026':'#f59e0b' };
+const CICLO_DASHES = { 'C.2024':'6,3', 'C.2025':'0', 'C.2026':'0' };
+
+// ── helpers dinámicos — actualizados automáticamente por sync_html.py ──
+const CORTE_LABEL = '24 jun 2026';                            // sync_html.py actualiza este valor
+const TR_FILE     = 'TR_Huge_062526.xlsx';       // sync_html.py actualiza este valor
+function niDP(d,c){ const v=(d.total[c]||[])[7]; return v?Math.round((d.inv[c]||0)/v):0; }
+function fmtObs(v){ return v>=1e6?`$${(v/1e6).toFixed(1)}M`:`$${Math.round(v).toLocaleString('es-MX')}`; }
+function pctChg(a,b){ return (a&&b)?Math.round((b-a)/a*100):0; }
+function signPct(n){ return (n>0?'+':'')+n+'%'; }
+
+/* ─── SINGLE COMBINED CHART — two Y-scale zones, one SVG ───────────── */
+// Left zone  (PL → MID): Lead, Válido, Perf, Citado  — escala lineal propia
+// Right zone (MID → W):  Citado, Asist, AdmFee, ITEP, DP — escala lineal propia
+// Citado es el punto de unión entre zonas
+
+const W=760, H=215, PL=62, PR=22, PT=26, PB=34, MID=355;
+const CW_L=MID-PL, CW_R=W-PR-MID, CH=H-PT-PB;
+
+function xL(i){ return PL + i*(CW_L/3); }   // i=0..3  (Lead→Citado)
+function xR(i){ return MID + i*(CW_R/4); }  // i=0..4  (Citado→DP)
+
+function buildChart(data, selectedCh){
+  const ciclos=Object.keys(data.total).filter(c=>data.total[c]);
+  selectedCh = selectedCh||'Total';
+
+  function zMax(idxs){
+    const v=[];
+    ciclos.forEach(c=> idxs.forEach(i=>{ if(data.total[c]?.[i]) v.push(data.total[c][i]); }));
+    if(selectedCh!=='Total'&&data.channels[selectedCh])
+      Object.values(data.channels[selectedCh]).forEach(arr=>
+        idxs.forEach(i=>{ if(arr?.[i]) v.push(arr[i]); }));
+    return Math.max(...v,1)*1.22;
+  }
+  const ymL=zMax([0,1,2,3]);
+  const ymR=zMax([3,4,5,6,7]);
+  function yL(v){ return v>0 ? PT+CH*(1-v/ymL) : null; }
+  function yR(v){ return v>0 ? PT+CH*(1-v/ymR) : null; }
+
+  let s=`<svg class="cpline" viewBox="0 0 ${W} ${H}">`;
+
+  // Zone backgrounds
+  s+=`<rect x="${PL}" y="${PT}" width="${CW_L}" height="${CH}" fill="#09121e" rx="4"/>`;
+  s+=`<rect x="${MID}" y="${PT}" width="${CW_R}" height="${CH}" fill="#0d0c1e" rx="4"/>`;
+
+  // Zone labels
+  s+=`<text x="${PL+CW_L/2}" y="${PT-10}" text-anchor="middle" font-size="9.0" fill="#374151" font-weight="700" letter-spacing="0.08em">ADQUISICIÓN</text>`;
+  s+=`<text x="${MID+CW_R/2}" y="${PT-10}" text-anchor="middle" font-size="9.0" fill="#4b3060" font-weight="700" letter-spacing="0.08em">CONVERSIÓN PROFUNDA</text>`;
+
+  // Separator line
+  s+=`<line x1="${MID}" y1="${PT-16}" x2="${MID}" y2="${H-PB+4}" stroke="#2563eb" stroke-width="1" stroke-dasharray="3,3" opacity="0.45"/>`;
+  s+=`<text x="${MID}" y="${H-PB+14}" text-anchor="middle" font-size="10.0" fill="#3b82f6" font-weight="700">Citado</text>`;
+
+  // Left Y grid + labels
+  [.25,.5,.75,1].forEach(f=>{
+    const v=ymL*f, y=yL(v); if(!y) return;
+    s+=`<line x1="${PL}" y1="${y}" x2="${MID}" y2="${y}" stroke="#131e30" stroke-width="0.5"/>`;
+    const l=v>=1000?`$${Math.round(v/1000)}k`:`$${Math.round(v)}`;
+    s+=`<text x="${PL-4}" y="${y+3}" text-anchor="end" font-size="8.5" fill="#374151">${l}</text>`;
+  });
+  // Right Y grid only
+  [.25,.5,.75,1].forEach(f=>{
+    const y=yR(ymR*f); if(!y) return;
+    s+=`<line x1="${MID}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="#131e30" stroke-width="0.5"/>`;
+    const _yv=ymR*f; const l=_yv>=1000000?`$${(_yv/1000000).toFixed(1)}M`:_yv>=10000?`$${Math.round(_yv/1000)}k`:_yv>=1000?`$${(_yv/1000).toFixed(1)}k`:`$${Math.round(_yv)}`;
+    s+=`<text x="${W-PR+3}" y="${y+3}" text-anchor="start" font-size="8.5" fill="#374151">${l}</text>`;
+  });
+
+  // X labels (reducidos)
+  ['Lead','Válido','Perf',''].forEach((l,i)=>{
+    if(!l) return;
+    s+=`<text x="${xL(i)}" y="${H-PB+13}" text-anchor="middle" font-size="8.5" fill="${i===0?'#64748b':'#374151'}" font-weight="${i===0?'600':'400'}">${l}</text>`;
+  });
+  ['','Asist','AdmFee','ITEP','DP'].forEach((l,i)=>{
+    if(!l) return;
+    s+=`<text x="${xR(i)}" y="${H-PB+13}" text-anchor="middle" font-size="8.5" fill="${i===4?'#64748b':'#374151'}" font-weight="${i===4?'600':'400'}">${l}</text>`;
+  });
+
+  function fmtV(v){ return v>=1000000?`$${(v/1000000).toFixed(1)}M`:v>=10000?`$${Math.round(v/1000)}k`:v>=1000?`$${(v/1000).toFixed(1)}k`:`$${v}`; }
+
+  // Recolectar todos los puntos por ciclo para posicionamiento inteligente de labels
+  function collectPts(arr){
+    if(!arr) return [];
+    const lPts=[0,1,2,3].map((si,xi)=>({x:xL(xi),y:yL(arr[si]),v:arr[si],side:'L',xi})).filter(p=>p.y&&p.v);
+    const rPts=[3,4,5,6,7].map((si,xi)=>({x:xR(xi),y:yR(arr[si]),v:arr[si],side:'R',xi})).filter(p=>p.y&&p.v);
+    return [...lPts, ...rPts.slice(1)]; // Citado no duplicado
+  }
+
+  function drawLines(arr, color, lw, dash){
+    if(!arr) return '';
+    const lPts=[0,1,2,3].map((si,xi)=>({x:xL(xi),y:yL(arr[si]),v:arr[si]})).filter(p=>p.y);
+    const rPts=[3,4,5,6,7].map((si,xi)=>({x:xR(xi),y:yR(arr[si]),v:arr[si]})).filter(p=>p.y);
+    let o='';
+    if(lPts.length>=2){
+      const d=lPts.map((p,i)=>`${i?'L':'M'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+      o+=`<path d="${d}" fill="none" stroke="${color}" stroke-width="${lw}" stroke-dasharray="${dash}" opacity="0.9"/>`;
+    }
+    if(rPts.length>=2){
+      const d=rPts.map((p,i)=>`${i?'L':'M'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+      o+=`<path d="${d}" fill="none" stroke="${color}" stroke-width="${lw}" stroke-dasharray="${dash}" opacity="0.9"/>`;
+    }
+    // Solo dots — labels se dibujan en segundo paso
+    const allPts=[...lPts,...rPts.slice(1)];
+    allPts.forEach(p=>{
+      if(!p.y||!p.v) return;
+      o+=`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${lw>1.2?3.5:2.8}" fill="${color}" stroke="#070b12" stroke-width="1.5"/>`;
+    });
+    return o;
+  }
+
+  // Determinar conjuntos de líneas a dibujar
+  const lineSets = [];
+  if(selectedCh==='Total'){
+    ciclos.forEach(c=>{ if(data.total[c]) lineSets.push({arr:data.total[c],color:CICLO_COLORS[c],lw:1.0,dash:'0'}); });
+  } else if(data.channels[selectedCh]){
+    Object.entries(data.channels[selectedCh]).forEach(([c,arr])=>
+      lineSets.push({arr,color:CICLO_COLORS[c],lw:0.9,dash:'0'}));
+  }
+
+  // Primer paso: dibujar líneas y dots
+  lineSets.forEach(ls=> s+=drawLines(ls.arr, ls.color, ls.lw, ls.dash));
+
+  // Segundo paso: labels inteligentes — por X, ordenar por Y para saber arriba/abajo
+  // Agrupar todos los puntos por coordenada X redondeada
+  const ptsByX = {};
+  lineSets.forEach((ls,li)=>{
+    collectPts(ls.arr).forEach(p=>{
+      const xk = Math.round(p.x);
+      if(!ptsByX[xk]) ptsByX[xk]=[];
+      ptsByX[xk].push({...p, color:ls.color, li});
+    });
+  });
+
+  Object.values(ptsByX).forEach(pts=>{
+    // Ordenar por Y ascendente (menor Y = más arriba = mayor CPL)
+    pts.sort((a,b)=>a.y-b.y);
+    pts.forEach((p,rank)=>{
+      if(!p.v) return;
+      const lbl=fmtV(p.v);
+      // topmost (rank=0) → label arriba; bottommost (rank=last) → label abajo; medio → arriba
+      const below = rank===pts.length-1 && pts.length>1;
+      const ly = below ? (p.y+13).toFixed(1) : (p.y-7).toFixed(1);
+      s+=`<text x="${p.x.toFixed(1)}" y="${ly}" text-anchor="middle" font-size="8.0" fill="${p.color}" font-weight="500" opacity="0.92">${lbl}</text>`;
+    });
+  });
+
+  return s+`</svg>`;
+}
+
+/* ─── STAGE COMPARISON GRID ─────────────────────────────────────────── */
+function buildStageGrid(data){
+  const ciclos=Object.keys(data.total).filter(c=>data.total[c]);
+  const stages=[
+    {i:0,n:'Lead'},{i:1,n:'Válido'},{i:2,n:'Perf'},{i:3,n:'Citado'},
+    {i:4,n:'Asistido'},{i:5,n:'AdmFee'},{i:6,n:'ITEP'},{i:7,n:'DP'}
+  ];
+  let h=`<div class="stage-grid">`;
+  stages.forEach(st=>{
+    const vals=ciclos.map(c=>data.total[c]?.[st.i]||0);
+    const maxV=Math.max(...vals,1);
+    h+=`<div class="s-card"><div class="s-name">${st.n}</div>`;
+    ciclos.forEach((c,ci)=>{
+      const v=vals[ci];
+      const w=Math.max(Math.round(v/maxV*100),3);
+      const lbl=v>=1000000?`$${(v/1000000).toFixed(1)}M`:v>=10000?`$${Math.round(v/1000)}k`:v>=1000?`$${(v/1000).toFixed(1)}k`:`$${v}`;
+      const color=CICLO_COLORS[c];
+      h+=`<div class="s-row">
+        <span class="s-ciclo" style="color:${color}">${c.replace('C.','')}</span>
+        <div class="s-bar-wrap">
+          <div class="s-bar" style="width:${w}%;background:${color}26;border-left:3px solid ${color}"></div>
+          <span class="s-val" style="color:${color}">${lbl}</span>
+        </div>
+      </div>`;
+    });
+    // Mini sparkline combinando barras con línea de tendencia
+    const spW=100,spH=18,spPad=6;
+    const pts=ciclos.map((c,i)=>({
+      x:ciclos.length>1?spPad+i*(spW-spPad*2)/(ciclos.length-1):spW/2,
+      y:spPad+(1-(vals[i]||0)/maxV)*(spH-spPad*2),
+      v:vals[i]||0,c
+    })).filter(p=>p.v>0);
+    if(pts.length>1){
+      const improved=pts[pts.length-1].v<pts[0].v;
+      const lineClr=improved?'#4ade80':'#f87171';
+      const d=pts.map((p,i)=>`${i===0?'M':'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+      h+=`<svg width="${spW}" height="${spH}" style="margin-top:5px;display:block;overflow:visible">
+        <path d="${d}" stroke="${lineClr}" stroke-width="1.2" fill="none" opacity="0.7"/>
+        ${pts.map(p=>`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.5" fill="${CICLO_COLORS[p.c]||'#60a5fa'}"/>`).join('')}
+      </svg>`;
+    }
+    h+=`</div>`;
+  });
+  return h+`</div>`;
+}
+
+/* ─── TABLE ─────────────────────────────────────────────────────────── */
+function cplClass(v, si){
+  if(!v) return 'dim';
+  if(si===0){ return v<900?'green':v<2000?'yellow':'red'; }
+  if(si===7){ return v<80000?'green':v<200000?'yellow':'red'; }
+  return '';
+}
+function fmt(v){
+  if(!v) return '<span class="dim">—</span>';
+  if(v>=1000000) return `$${(v/1000000).toFixed(2)}M`;
+  if(v>=1000)    return `$${Math.round(v/1000)}k`;
+  return `$${v.toLocaleString('es-MX')}`;
+}
+
+function buildTable(data){
+  const ciclos = Object.keys(data.total).filter(c=>data.total[c]);
+  const allCh  = Object.keys(data.channels);
+  const keyStages = [0,1,3,4,7]; // Lead,Valid,Cit,Asist,DP
+
+  let h = `<div class="tbl-wrap"><table>
+    <thead><tr><th>Canal / Ciclo</th>`;
+  keyStages.forEach(si=> h += `<th>${SN[si]}</th>`);
+  h += `<th>Inv MXN</th></tr></thead><tbody>`;
+
+  allCh.forEach(ch=>{
+    const d = data.channels[ch];
+    if(!d) return;
+    ciclos.forEach(c=>{
+      if(!d[c]) return;
+      h += `<tr><td style="padding-left:8px"><span style="color:${CICLO_COLORS[c]||'#94a3b8'};font-size:11px;margin-right:6px">●</span>${ch} ${c}</td>`;
+      keyStages.forEach(si=>{
+        const v = d[c][si];
+        h += `<td class="${cplClass(v,si)}">${fmt(v)}</td>`;
+      });
+      h += `<td class="dim">${data.inv&&data.inv[c]?'ver total':'—'}</td></tr>`;
+    });
+  });
+
+  // Total rows
+  ciclos.forEach(c=>{
+    if(!data.total[c]) return;
+    h += `<tr class="total-row"><td>⬟ TOTAL ${c}</td>`;
+    keyStages.forEach(si=>{
+      const v = data.total[c][si];
+      h += `<td class="${cplClass(v,si)}">${fmt(v)}</td>`;
+    });
+    const inv = data.inv?.[c];
+    h += `<td class="green">${inv?`$${(inv/1000000).toFixed(2)}M`:'—'}</td></tr>`;
+  });
+
+  h += `</tbody></table></div>`;
+  return h;
+}
+
+/* ─── OBSERVATIONS ──────────────────────────────────────────────────── */
+function buildObsAstate(){
+  return (()=>{
+    const t25=ASTATE.total['C.2025']||[], t26=ASTATE.total['C.2026']||[];
+    const i25=ASTATE.inv['C.2025']||0,   i26=ASTATE.inv['C.2026']||0;
+    const n25=niDP(ASTATE,'C.2025'),      n26=niDP(ASTATE,'C.2026');
+    const cv25=t25[1], cv26=t26[1], dp25=t25[7], dp26=t26[7];
+    return `
+  <div class="obs-grid">
+    <div class="obs-card">
+      <div class="obs-ttl" style="color:#3b82f6">C.2025 — Base de referencia</div>
+      <div class="obs-item"><span class="obs-icon">📊</span>
+        <div class="obs-txt">Inversión <strong>${fmtObs(i25)}</strong> · <strong>${n25} DPs</strong> · CPL/DP <strong>${fmtObs(dp25)}</strong>. Base comparable para evaluar C.2026.</div></div>
+      <div class="obs-item"><span class="obs-icon">✅</span>
+        <div class="obs-txt">Tasa AdmFee→DP del <strong>66%</strong> — de cada 100 prospectos que pagaron Admission Fee, 66 llegaron a DP. Indicador de calidad del cierre.</div></div>
+      <div class="obs-item"><span class="obs-icon">📌</span>
+        <div class="obs-txt">CPL/Válido <strong>${fmtObs(cv25)}</strong> — el costo del lead calificado, el indicador más limpio del rendimiento del canal.</div></div>
+    </div>
+    <div class="obs-card">
+      <div class="obs-ttl" style="color:#f59e0b">C.2026 — Calidad sobre volumen</div>
+      <div class="obs-item"><span class="obs-icon">📈</span>
+        <div class="obs-txt">Inversión ${signPct(pctChg(i25,i26))} a <strong>${fmtObs(i26)}</strong> · <strong>${n26} DPs al ${CORTE_LABEL}</strong> · CPL/DP <strong>${fmtObs(dp26)}</strong>.</div></div>
+      <div class="obs-item"><span class="obs-icon">🔄</span>
+        <div class="obs-txt">CPL/Válido <strong>${fmtObs(cv26)}</strong> vs ${fmtObs(cv25)} C.2025 (${signPct(pctChg(cv25,cv26))}) — el costo del lead calificado vs el ciclo anterior.</div></div>
+      <div class="obs-item"><span class="obs-icon">⚠️</span>
+        <div class="obs-txt">CPL/DP ${signPct(pctChg(dp25,dp26))} vs C.2025. C.2026 es un ciclo activo al corte ${CORTE_LABEL} — el CPL bajará conforme los AdmFees pendientes conviertan a DP.</div></div>
+      <div class="obs-item"><span class="obs-icon">💡</span>
+        <div class="obs-txt"><strong>Lectura correcta:</strong> La inversión mejoró la calidad del pipeline. Corte ${CORTE_LABEL} · Fuente: ${TR_FILE} + Datorama actuals.</div></div>
+    </div>
+  </div>`; })()
+}
+
+function buildObsTxstate(){
+  return (()=>{
+    const t25=TXSTATE.total['C.2025']||[], t26=TXSTATE.total['C.2026']||[];
+    const i25=TXSTATE.inv['C.2025']||0,   i26=TXSTATE.inv['C.2026']||0;
+    const n25=niDP(TXSTATE,'C.2025'),      n26=niDP(TXSTATE,'C.2026');
+    const cv25=t25[1], cv26=t26[1], dp25=t25[7], dp26=t26[7];
+    const vr25=(t25[0]&&t25[1]) ? (t25[0]/t25[1]*100).toFixed(1) : '—';
+    const vr26=(t26[0]&&t26[1]) ? (t26[0]/t26[1]*100).toFixed(1) : '—';
+    return `
+  <div class="obs-grid">
+    <div class="obs-card">
+      <div class="obs-ttl" style="color:#3b82f6">C.2025 — Primer ciclo con volumen real</div>
+      <div class="obs-item"><span class="obs-icon">🚀</span>
+        <div class="obs-txt">Inversión <strong>${fmtObs(i25)}</strong> · <strong>${n25} DPs</strong> · CPL/DP <strong>${fmtObs(dp25)}</strong>. Primer ciclo con campaña digital estructurada.</div></div>
+      <div class="obs-item"><span class="obs-icon">⚠️</span>
+        <div class="obs-txt">La validación fue el cuello de botella: solo ${vr25}% de leads calificaron como Válidos. CPL/Válido <strong>${fmtObs(cv25)}</strong> — margen de mejora significativo identificado.</div></div>
+      <div class="obs-item"><span class="obs-icon">✅</span>
+        <div class="obs-txt">67% de AdmFees → DP — una vez llegaban a fondo de funnel, el cierre era sólido.</div></div>
+    </div>
+    <div class="obs-card">
+      <div class="obs-ttl" style="color:#f59e0b">C.2026 — La mayor mejora del portafolio</div>
+      <div class="obs-item"><span class="obs-icon">📈</span>
+        <div class="obs-txt">Lead→Válido <strong>${vr26}%</strong> al corte ${CORTE_LABEL} (vs ${vr25}% en C.2025). Mejora en calidad de leads generados.</div></div>
+      <div class="obs-item"><span class="obs-icon">🏆</span>
+        <div class="obs-txt">CPL/Válido <strong>${fmtObs(cv26)}</strong> vs ${fmtObs(cv25)} C.2025 (${signPct(pctChg(cv25,cv26))}) — el resultado más positivo de TxState en el período.</div></div>
+      <div class="obs-item"><span class="obs-icon">⚠️</span>
+        <div class="obs-txt">CPL/DP <strong>${fmtObs(dp26)}</strong> (${signPct(pctChg(dp25,dp26))} vs C.2025). C.2026 es un ciclo activo al corte ${CORTE_LABEL} — el CPL bajará conforme los AdmFees pendientes conviertan a DP.</div></div>
+    </div>
+  </div>`; })()
+}
+
+/* ─── BUILDER ────────────────────────────────────────────────────────── */
+function buildSection(univId){
+  const data = univId==='astate' ? ASTATE : TXSTATE;
+  const univ = univId==='astate' ? 'AState' : 'TxState';
+  const ciclos = Object.keys(data.total).filter(c=>data.total[c]);
+  const warnHtml = '';
+
+  // Legend + channel toggle
+  const allCh = ['Total', ...Object.keys(data.channels)];
+  const legendHtml = `<div class="legend">
+    ${ciclos.map(c=>`<div class="lg">
+      <div class="lg-line" style="background:${CICLO_COLORS[c]};height:3px;border-radius:2px"></div>
+      <div class="lg-dot" style="background:${CICLO_COLORS[c]}"></div>
+      ${c}</div>`).join('')}
+    <div class="lg" style="opacity:.5">
+      <svg width="24" height="10"><line x1="0" y1="5" x2="24" y2="5" stroke="#94a3b8" stroke-width="1.5"/></svg>
+      Canal seleccionado
+    </div></div>`;
+
+  const toggleHtml = `<div class="ch-toggle" id="cht-${univId}">
+    ${allCh.map((ch,i)=>`<div class="cht${i===0?' active':''}"
+      style="${i===0?'background:#0f2b5c;border-color:#2563eb;color:#93c5fd':''}"
+      onclick="setCh('${univId}','${ch}',this)">${ch}</div>`).join('')}
+  </div>`;
+
+  // Nota de mejora C.2025→C.2026
+  const t25=data.total['C.2025']||[], t26=data.total['C.2026']||[];
+  function fmtMXN(v){ return v>=1000000?`$${(v/1000000).toFixed(2)}M`:v>=1000?`$${Math.round(v/1000).toLocaleString('es-MX')}k`:`$${v}`; }
+  function pctDiff(a,b){ return a&&b?Math.round((b-a)/a*100):null; }
+  function noteChip(label, v25, v26){
+    if(!v25||!v26) return '';
+    const d = pctDiff(v25,v26);
+    const improved = d < 0;
+    const bg     = improved ? '#031a0c' : '#160606';
+    const border  = improved ? '#14532d' : '#7f1d1d';
+    const tagClr  = improved ? '#4ade80' : '#f87171';
+    const tagTxt  = improved ? `▼ ${Math.abs(d)}% más barato` : `▲ ${d}% más caro`;
+    return `<div style="background:${bg};border:1px solid ${border};border-radius:8px;padding:10px 14px;min-width:148px;flex:1">
+      <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px">${label}</div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">
+        <span style="font-size:10px;color:#4b5563">C.2025</span>
+        <span style="font-size:13px;color:#60a5fa;font-weight:600">${fmtMXN(v25)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+        <span style="font-size:10px;color:#4b5563">C.2026</span>
+        <span style="font-size:13px;color:#f59e0b;font-weight:600">${fmtMXN(v26)}</span>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:${tagClr};text-align:right">${tagTxt}</div>
+    </div>`;
+  }
+  const noteHtml = (t25.length&&t26.length) ? `
+    <div style="background:#070b12;border:1px solid #1a2540;border-radius:10px;padding:16px 18px;margin-bottom:22px">
+      <div style="font-size:10px;font-weight:600;color:#4b5563;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px">C.2026 vs C.2025 — CPL real por etapa (en MXN)</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        ${noteChip('CPL / Lead',    t25[0], t26[0])}
+        ${noteChip('CPL / Válido',  t25[1], t26[1])}
+        ${noteChip('CPL / Citado',  t25[3], t26[3])}
+        ${noteChip('CPL / DP (NI)', t25[7], t26[7])}
+      </div>
+    </div>` : '';
+
+  return `
+    <div class="chart-wrap">
+      <div class="chart-ttl">CPL Global por etapa · Adquisición y Conversión profunda</div>
+      <div class="chart-note">Inversión total ÷ leads por etapa · Zona izquierda = Lead→Citado · Zona derecha = Citado→DP · Selecciona un canal para ver solo esa curva · "Total" muestra el global</div>
+      ${legendHtml}
+      ${toggleHtml}
+      <div id="chart-${univId}">${buildChart(data,'Total')}</div>
+    </div>
+    <div style="margin-bottom:10px;font-size:12px;color:#4b5563;text-transform:uppercase;letter-spacing:.06em;margin-top:4px">CPL por etapa — comparación de ciclos</div>
+    ${buildStageGrid(data)}
+    ${noteHtml}
+    <div style="margin-bottom:10px;font-size:12px;color:#4b5563;text-transform:uppercase;letter-spacing:.06em">Tabla detalle — etapas clave</div>
+    ${buildTable(data)}
+    <p style="font-size:11px;color:#374151;margin-top:8px">Inversión MXN · Verde <$900 lead/$80k DP · Amarillo $900-2k/$80-200k · Rojo >$2k/>$200k</p>
+    ${warnHtml}
+    <div style="margin-top:28px">${univId==='astate' ? buildObsAstate() : buildObsTxstate()}</div>`;
+}
+
+
+function setCh(univId, ch, el){
+  const data=univId==='astate'?ASTATE:TXSTATE;
+  document.querySelectorAll(`#cht-${univId} .cht`).forEach(e=>{
+    e.classList.remove('active'); e.style.background=''; e.style.borderColor=''; e.style.color='';
+  });
+  el.classList.add('active');
+  el.style.background='#0f2b5c'; el.style.borderColor='#2563eb'; el.style.color='#93c5fd';
+  document.getElementById(`chart-${univId}`).innerHTML=buildChart(data,ch);
+}
+
+function show(id,el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+}
+
+
+
+/* ─── EEH COMBINADO ─────────────────────────────────────────────────── */
+function buildEEHData(){
+  const eeh={channels:{},total:{},inv:{}};
+  ['C.2025','C.2026'].forEach(cy=>{
+    const tA=ASTATE.total[cy],tTX=TXSTATE.total[cy];
+    const iA=ASTATE.inv[cy]||0,iTX=TXSTATE.inv[cy]||0;
+    if(!tA||!tTX) return;
+    eeh.total[cy]=tA.map((cA,i)=>{
+      const cTX=tTX[i]; if(!cA||!cTX) return null;
+      return Math.round((iA+iTX)/((iA/cA)+(iTX/cTX)));
+    });
+    eeh.inv[cy]=iA+iTX;
+  });
+  return eeh;
+}
+
+function buildEEHSection(){
+  const EEH=buildEEHData();
+  const t25=EEH.total['C.2025']||[], t26=EEH.total['C.2026']||[];
+  function fmtMXN(v){ return v>=1000000?`$${(v/1000000).toFixed(2)}M`:v>=1000?`$${Math.round(v/1000).toLocaleString('es-MX')}k`:`$${v}`; }
+  function pctDiff(a,b){ return a&&b?Math.round((b-a)/a*100):null; }
+  function noteChip(label,v25,v26){
+    if(!v25||!v26) return '';
+    const d=pctDiff(v25,v26), improved=d<0;
+    const bg=improved?'#031a0c':'#160606', border=improved?'#14532d':'#7f1d1d';
+    const tagClr=improved?'#4ade80':'#f87171', tagTxt=improved?`▼ ${Math.abs(d)}% más barato`:`▲ ${d}% más caro`;
+    return `<div style="background:${bg};border:1px solid ${border};border-radius:8px;padding:10px 14px;min-width:148px;flex:1">
+      <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px">${label}</div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">
+        <span style="font-size:10px;color:#4b5563">C.2025</span>
+        <span style="font-size:13px;color:#60a5fa;font-weight:600">${fmtMXN(v25)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+        <span style="font-size:10px;color:#4b5563">C.2026</span>
+        <span style="font-size:13px;color:#f59e0b;font-weight:600">${fmtMXN(v26)}</span>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:${tagClr};text-align:right">${tagTxt}</div>
+    </div>`;
+  }
+  const chips='';
+
+  const eehCiclos = Object.keys(EEH.total).filter(c=>EEH.total[c]);
+  const eehLegend = `<div class="legend">
+    ${eehCiclos.map(c=>`<div class="lg">
+      <div class="lg-line" style="background:${CICLO_COLORS[c]};height:3px;border-radius:2px"></div>
+      <div class="lg-dot" style="background:${CICLO_COLORS[c]}"></div>
+      ${c}</div>`).join('')}
+  </div>`;
+
+  return `
+    <div style="background:#0a1428;border:1px solid #2563eb;border-radius:12px;padding:4px 18px 10px;margin-bottom:20px">
+      <div style="font-size:10px;color:#3b82f6;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin:10px 0 4px">Vista combinada · AState + TxState</div>
+      <div style="font-size:12px;color:#64748b">CPL ponderado por volumen de inversión — el número que ve el cliente como portafolio EEH</div>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-ttl">CPL Global EEH · AState + TxState · OC filter ambas universidades</div>
+      <div class="chart-note">CPL ponderado por volumen de leads · Inversión combinada C.2025 ${fmtObs((ASTATE.inv['C.2025']||0)+(TXSTATE.inv['C.2025']||0))} · C.2026 ${fmtObs((ASTATE.inv['C.2026']||0)+(TXSTATE.inv['C.2026']||0))}</div>
+      ${eehLegend}
+      <div id="chart-eeh">${buildChart(EEH,'Total')}</div>
+    </div>
+    <div style="margin-bottom:10px;font-size:12px;color:#4b5563;text-transform:uppercase;letter-spacing:.06em;margin-top:4px">CPL por etapa — comparación de ciclos (combinado)</div>
+    ${buildStageGrid(EEH)}
+    ${chips}
+    <div style="margin-bottom:10px;font-size:12px;color:#4b5563;text-transform:uppercase;letter-spacing:.06em">Tabla detalle — etapas clave (EEH combinado)</div>
+    ${buildTable(EEH)}
+    <p style="font-size:11px;color:#374151;margin-top:8px">CPL ponderado por volumen · Verde <$900 lead/$80k DP · Amarillo $900-2k/$80-200k · Rojo >$2k/>$200k</p>
+    <div style="margin-top:28px">
+      ${(()=>{
+        const ia25=(ASTATE.inv['C.2025']||0), ia26=(ASTATE.inv['C.2026']||0);
+        const it25=(TXSTATE.inv['C.2025']||0), it26=(TXSTATE.inv['C.2026']||0);
+        const i25=ia25+it25, i26=ia26+it26;
+        const na25=niDP(ASTATE,'C.2025'), nt25=niDP(TXSTATE,'C.2025');
+        const na26=niDP(ASTATE,'C.2026'), nt26=niDP(TXSTATE,'C.2026');
+        const dp25=(ASTATE.total['C.2025']||[])[7]||(TXSTATE.total['C.2025']||[])[7];
+        const ee25=(EEH.total['C.2025']||[]), ee26=(EEH.total['C.2026']||[]);
+        return `<div class="obs-grid">
+        <div class="obs-card">
+          <div class="obs-ttl" style="color:#3b82f6">C.2025 — Combinado EEH</div>
+          <div class="obs-item"><span class="obs-icon">📊</span>
+            <div class="obs-txt">Inversión total <strong>${fmtObs(i25)}</strong> (AState ${fmtObs(ia25)} + TxState ${fmtObs(it25)}). CPL/Lead combinado <strong>${fmtObs(ee25[0])}</strong> · CPL/DP <strong>${fmtObs(ee25[7])}</strong>.</div></div>
+          <div class="obs-item"><span class="obs-icon">✅</span>
+            <div class="obs-txt">EEH C.2025: <strong>${na25+nt25} DPs</strong> combinados (AState ${na25} + TxState ${nt25}). Fuente: ${TR_FILE} · Datorama actuals.</div></div>
+        </div>
+        <div class="obs-card">
+          <div class="obs-ttl" style="color:#f59e0b">C.2026 — Combinado EEH al ${CORTE_LABEL}</div>
+          <div class="obs-item"><span class="obs-icon">📈</span>
+            <div class="obs-txt">Inversión <strong>${fmtObs(i26)}</strong> (${signPct(pctChg(i25,i26))} vs C.2025). CPL/Lead <strong>${fmtObs(ee26[0])}</strong> · CPL/DP <strong>${fmtObs(ee26[7])}</strong>. DPs al corte: <strong>${na26+nt26}</strong> (AState ${na26} + TxState ${nt26}).</div></div>
+          <div class="obs-item"><span class="obs-icon">💬</span>
+            <div class="obs-txt">WhatsApp lidera en AState (CPL/DP más bajo del portafolio). TxState madura: Lead→Válido mejora vs C.2025. <strong>Calidad sobre volumen en todo EEH.</strong></div></div>
+        </div>
+      </div>`; })()}
+    </div>`;
+}
+
+document.getElementById('astate').innerHTML  = buildSection('astate');
+document.getElementById('txstate').innerHTML = buildSection('txstate');
+document.getElementById('eeh').innerHTML = buildEEHSection();
+
+// Actualizar textos estáticos con constantes dinámicas
+const _sb = document.getElementById('cpl-sub');
+if(_sb) _sb.textContent =
+  `Costo por lead en cada etapa de conversión · Inversión MXN ÷ # de registros · C.2026: ${TR_FILE} · WA def D (LeadSource WA + utm_id=genjo + LeadManagement=Genjo) · ${CORTE_LABEL}`;
+const _cb = document.getElementById('corte-badge');
+if(_cb) _cb.textContent = `📅 Corte: ${CORTE_LABEL}`;
+const _tb = document.getElementById('tr-badge');
+if(_tb) _tb.textContent = `TR: ${TR_FILE}`;
+
+const _setTxt = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+_setTxt('tr-file-nota', TR_FILE);
+_setTxt('corte-nota',   CORTE_LABEL);
+_setTxt('corte-mes',    CORTE_LABEL);
+_setTxt('corte-footer', CORTE_LABEL);
+const _invNota = document.getElementById('inv-nota');
+if(_invNota){
+  const ia25=ASTATE.inv['C.2025']||0, ia26=ASTATE.inv['C.2026']||0;
+  const it25=TXSTATE.inv['C.2025']||0, it26=TXSTATE.inv['C.2026']||0;
+  _invNota.innerHTML = `Fuente: <code>${TR_FILE}</code> (NI/DPs) + Datorama actuals por canal (inversión), período ago–${CORTE_LABEL} por ciclo.<br><strong>AState:</strong> C.2025=${fmtObs(ia25)} · C.2026=${fmtObs(ia26)} (${signPct(pctChg(ia25,ia26))}) · <strong>TxState:</strong> C.2025=${fmtObs(it25)} · C.2026=${fmtObs(it26)} (${signPct(pctChg(it25,it26))})`;
+}
+</script>
+
+</div><!-- end .page-body -->
+
+<div class="page-notes">
+  <div class="pn-title">Notas metodológicas</div>
+  <div class="pn-grid">
+    <div class="pn-item green">
+      <div class="pn-tag" style="color:#4ade80">✅ Recalculado desde Track Record</div>
+      <div class="pn-body">Fuente de leads: <code id="tr-file-nota"></code>. Filtro: <strong>OC (Origen Conjunto) para ambas universidades</strong> — incluye Digital, Esfuerzo Campus, Llamada entrada, MailChimp, Marketplace, Web. stage_date ≤ corte <span id="corte-nota"></span> por ciclo.</div>
+    </div>
+    <div class="pn-item green">
+      <div class="pn-tag" style="color:#4ade80">✅ Inversión fuente confirmada</div>
+      <div class="pn-body" id="inv-nota">Fuente: <code></code> (NI/DPs) + Datorama actuals por canal (inversión), período ago–<span id="corte-mes"></span> por ciclo.</div>
+    </div>
+    <div class="pn-item">
+      <div class="pn-tag" style="color:#93c5fd">📐 Fórmula CPL</div>
+      <div class="pn-body"><code>CPL = Inversión MXN ÷ leads en la etapa</code><br>Leads contados con metodología BDD (stage_date ≤ corte). Gráfica izquierda = Lead→Citado · derecha = Citado→DP (escalas independientes). CPL EEH ponderado por volumen de inversión.</div>
+    </div>
+  </div>
+</div>
+<div class="page-footer">
+  <span>EEH · Planeación 2027 · CourtAvenue / Velocity AI</span>
+  <span id="footer-fuentes">Inversión: Datorama actuals por canal · Leads: TR_Huge (scope Digital, 4 canales) · Corte <span id="corte-footer"></span></span>
+</div>
+</body>
+</html>

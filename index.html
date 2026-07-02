@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EEH · Análisis de Planeación 2027 · Dashboard</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+/* Header gradient */
+.header{background:linear-gradient(135deg,#0a1828 0%,#0f2b5c 100%);border-bottom:1px solid #1e3a5f;padding:32px 40px 28px;margin:-36px -40px 36px}
+.header-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
+.project-tag{font-size:11px;font-weight:600;color:#2563eb;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.header h1{font-size:23px;font-weight:700;color:#f1f5f9;margin-bottom:6px}
+.header .sub{font-size:13px;color:#4b5563}
+.date-badge{background:#0a1020;border:1px solid #1e3a5f;border-radius:8px;padding:8px 16px;text-align:right;flex-shrink:0}
+.date-badge .lbl{font-size:10px;color:#374151;text-transform:uppercase;letter-spacing:.06em}
+.date-badge .val{font-size:15px;font-weight:600;color:#93c5fd}
+
+/* Mensaje para Arturo */
+.arturo-card{background:#0a1020;border:1px solid #1a2540;border-left:4px solid #2563eb;border-radius:0 10px 10px 0;padding:20px 24px;margin-bottom:32px}
+.arturo-from{font-size:11px;color:#4b5563;margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em}
+.arturo-body{font-size:14px;color:#94a3b8;line-height:1.8}
+.arturo-body p{margin-bottom:10px}.arturo-body p:last-child{margin-bottom:0}
+.arturo-body strong{color:#e2e8f0}
+
+/* Documents grid */
+.section-title{font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px}
+.docs-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-bottom:40px}
+.doc-card{background:#0a1020;border:1px solid #1a2540;border-radius:12px;overflow:hidden;transition:.2s}
+.doc-card:hover{border-color:#2563eb;transform:translateY(-2px)}
+
+/* Screenshot thumbnail */
+.thumb{width:100%;height:175px;overflow:hidden;background:#050810;position:relative;border-bottom:1px solid #1a2540}
+.thumb img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block}
+.thumb-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 55%,#0a1020 100%)}
+
+.doc-body{padding:16px 18px}
+.doc-num{font-size:10px;font-weight:700;color:#1e3a5f;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.doc-title{font-size:15px;font-weight:600;color:#f1f5f9;margin-bottom:8px}
+.doc-desc{font-size:12px;color:#64748b;line-height:1.65;margin-bottom:16px}
+.doc-btn{display:inline-block;background:#0f2b5c;color:#93c5fd;border:1px solid #2563eb;border-radius:6px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;transition:.15s}
+.doc-btn:hover{background:#1e3a5f}
+
+/* Tabs de metodología */
+.meta-area{margin-bottom:40px}
+.meta-tabs{display:flex;gap:6px;margin-bottom:0}
+.meta-tab{padding:8px 20px;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:500;border:1px solid #1a2540;border-bottom:none;background:#0a1020;color:#4b5563;transition:.15s}
+.meta-tab.active{background:#0f1e35;color:#93c5fd;border-color:#1e3a5f}
+.meta-pane{display:none;background:#0a1020;border:1px solid #1a2540;border-radius:0 12px 12px 12px;padding:24px 28px}
+.meta-pane.active{display:block}
+
+/* Notas */
+.note-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.note-item{background:#070b12;border-radius:8px;padding:14px 16px;border-left:3px solid #1e3a5f}
+.note-item.green{border-left-color:#166534}
+.note-item.yellow{border-left-color:#92400e}
+.note-item.red{border-left-color:#7f1d1d}
+.note-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.note-title{font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:4px}
+.note-body{font-size:12px;color:#64748b;line-height:1.6}
+.note-body code{background:#0f1e35;color:#93c5fd;padding:1px 5px;border-radius:3px;font-size:11px}
+
+/* Pasos */
+.steps{display:flex;flex-direction:column;gap:12px}
+.step{display:flex;gap:14px;align-items:flex-start}
+.step-num{width:26px;height:26px;background:#0f2b5c;border:1px solid #2563eb;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#93c5fd;flex-shrink:0}
+.step-body{flex:1;padding-top:2px}
+.step-title{font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:3px}
+.step-desc{font-size:12px;color:#64748b;line-height:1.55}
+.step-badge{display:inline-block;font-size:10px;font-weight:600;padding:1px 7px;border-radius:10px;margin-left:8px}
+.badge-pend{background:#1a1800;color:#fbbf24;border:1px solid #78350f}
+.badge-done{background:#052010;color:#4ade80;border:1px solid #166534}
+.badge-next{background:#1a0a00;color:#fb923c;border:1px solid #7c3a00}
+
+/* Footer */
+.footer{padding:24px 0;border-top:1px solid #0f1e35;font-size:11px;color:#1e293b;display:flex;justify-content:space-between}
+
+@media(max-width:768px){
+  .header{padding:18px 20px 16px;margin:-24px -20px 24px}
+  .header-top{flex-direction:column;gap:10px}
+  .header h1{font-size:19px}
+  .date-badge{align-self:flex-start}
+  .docs-grid{grid-template-columns:1fr}
+  .meta-tabs{flex-wrap:wrap}
+  .meta-tab{font-size:12px;padding:7px 14px}
+  .note-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <span class="nav-brand"><img src="elisia-logo.webp" class="nav-logo" alt="Elisia Education Hub"></span>
+  <div class="nav-sep"></div>
+  <div class="nav-divider"></div>
+  <a href="funneles_ciclos.html" class="nav-link">01 · Funneles</a>
+  <a href="cpl_etapas.html" class="nav-link">02 · CPL Etapas</a>
+  <a href="canal_rentabilidad.html" class="nav-link">03 · CPL Plataformas</a>
+  <a href="leads_perdidos.html" class="nav-link">04 · Leads Perdidos</a>
+</nav>
+
+<div class="page-body">
+
+<!-- Header -->
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="project-tag">EEH · Planeación 2027</div>
+      <h1>Análisis de CPL y Canales Digitales</h1>
+      <p class="sub">Arkansas State University · Texas State University · Ciclos C.2024 – C.2026</p>
+    </div>
+    <div class="date-badge">
+      <div class="lbl">Fecha de corte</div>
+      <div class="val">24 jun 2026</div>
+    </div>
+  </div>
+</div>
+
+<!-- Documentos -->
+<p class="section-title" style="margin-top:0">Documentos del análisis</p>
+<div class="docs-grid">
+
+  <div class="doc-card">
+    <div class="thumb">
+      <img src="thumb_funneles.png" alt="Funneles por Ciclo">
+      <div class="thumb-overlay"></div>
+    </div>
+    <div class="doc-body">
+      <div class="doc-num">01 · Volumen</div>
+      <div class="doc-title">Funneles por Ciclo</div>
+      <div class="doc-desc">Muestra cuántos leads entraron y cuántos llegaron a cada etapa del funnel (Válido, Perfilado, Citado, Asistido, DP) para cada canal y ciclo. Útil para ver dónde se pierde más volumen y cómo evoluciona de un ciclo a otro.</div>
+      <a class="doc-btn" href="funneles_ciclos.html" target="_blank">Abrir documento →</a>
+    </div>
+  </div>
+
+  <div class="doc-card">
+    <div class="thumb">
+      <img src="thumb_cpl.png" alt="CPL por Etapa del Funnel">
+      <div class="thumb-overlay"></div>
+    </div>
+    <div class="doc-body">
+      <div class="doc-num">02 · Costos</div>
+      <div class="doc-title">CPL por Etapa del Funnel</div>
+      <div class="doc-desc">Gráfica de evolución del Costo Por Lead en cada etapa para C.2024, C.2025 y C.2026. Incluye selector de canal para ver el CPL de Google, Meta o WhatsApp por separado. Las tarjetas de abajo destacan dónde bajó el CPL en verde.</div>
+      <a class="doc-btn" href="cpl_etapas.html" target="_blank">Abrir documento →</a>
+    </div>
+  </div>
+
+  <div class="doc-card">
+    <div class="thumb">
+      <img src="thumb_canal.png" alt="Canal más Rentable">
+      <div class="thumb-overlay"></div>
+    </div>
+    <div class="doc-body">
+      <div class="doc-num">03 · CPL Plataformas</div>
+      <div class="doc-title">Canal más Rentable</div>
+      <div class="doc-desc">Ranking de eficiencia por canal considerando todo el funnel: mapa de calor (verde = más barato, rojo = más caro), CPL promedio, y tasa de conversión Lead a DP. Filtra por año (C.2025, C.2026 o promedio total) y cambia de vista según lo que necesites.</div>
+      <a class="doc-btn" href="canal_rentabilidad.html" target="_blank">Abrir documento →</a>
+    </div>
+  </div>
+
+  <div class="doc-card">
+    <div class="thumb" style="display:flex;align-items:flex-end;gap:5px;padding:24px 22px;background:linear-gradient(135deg,#0a1020,#0f1a2e)">
+      <div style="flex:1;height:78%;background:linear-gradient(180deg,#60a5fa,#2563eb);border-radius:3px"></div>
+      <div style="flex:1;height:82%;background:linear-gradient(180deg,#38bdf8,#0ea5e9);border-radius:3px"></div>
+      <div style="flex:1;height:24%;background:linear-gradient(180deg,#2dd4bf,#14b8a6);border-radius:3px"></div>
+      <div style="flex:1;height:34%;background:linear-gradient(180deg,#facc15,#eab308);border-radius:3px"></div>
+      <div style="flex:1;height:46%;background:linear-gradient(180deg,#fbbf24,#f59e0b);border-radius:3px"></div>
+      <div style="flex:1;height:14%;background:linear-gradient(180deg,#fb7185,#e11d48);border-radius:3px"></div>
+      <div class="thumb-overlay"></div>
+    </div>
+    <div class="doc-body">
+      <div class="doc-num">04 · Retención</div>
+      <div class="doc-title">Leads Perdidos</div>
+      <div class="doc-desc">Dimensiona los leads perdidos contra el total, por etapa del funnel, mes de pérdida y motivo registrado en Salesforce. Filtrable por <b>grupo de origen</b> (Digital, Orgánico, Prospección, Deportes), universidad y ciclo (Fall + Spring).</div>
+      <a class="doc-btn" href="leads_perdidos.html" target="_blank">Abrir documento →</a>
+    </div>
+  </div>
+
+  <div class="doc-card">
+    <div class="thumb" style="position:relative;padding:0;background:linear-gradient(135deg,#0a1020,#0f1a2e)">
+      <svg viewBox="0 0 320 150" preserveAspectRatio="none" style="width:100%;height:100%;display:block">
+        <polyline points="20,30 80,55 140,95 200,118 260,132 300,140" fill="none" stroke="#3b82f6" stroke-width="3"/>
+        <polyline points="20,40 80,70 140,108 200,126 260,137 300,143" fill="none" stroke="#22c55e" stroke-width="3"/>
+        <polyline points="20,55 80,88 140,118 200,131 260,140 300,145" fill="none" stroke="#64748b" stroke-width="3"/>
+      </svg>
+      <div class="thumb-overlay"></div>
+    </div>
+    <div class="doc-body">
+      <div class="doc-num">05 · Comparativo</div>
+      <div class="doc-title">Comparativo por ciclo</div>
+      <div class="doc-desc">Compara el mismo indicador año contra año: conversión por etapa, % de pérdida, pérdidas mes a mes, hitos de fondo de embudo y mix de motivos. Filtrable por universidad y grupo de origen.</div>
+      <a class="doc-btn" href="comparativo.html" target="_blank">Abrir documento →</a>
+    </div>
+  </div>
+
+</div>
+
+<!-- Metodología y pasos -->
+<div class="meta-area">
+  <p class="section-title" style="margin-top:0;margin-bottom:16px">Notas de metodología y próximos pasos</p>
+  <div class="meta-tabs">
+    <div class="meta-tab active" onclick="setMeta('notas',this)">Notas metodológicas</div>
+    <div class="meta-tab" onclick="setMeta('pasos',this)">Próximos pasos</div>
+  </div>
+
+  <div class="meta-pane active" id="meta-notas">
+    <div class="note-grid">
+
+      <div class="note-item green">
+        <div class="note-tag" style="color:#4ade80">✅ Corrección aplicada</div>
+        <div class="note-title">Atribución WhatsApp — AState C.2026</div>
+        <div class="note-body">La campaña "EKN - Click to WhatsApp - Generic y Brand" <strong>no popula el campo Facebook Campaign Name</strong> en Salesforce. Los leads se identificaron cruzando: (1) Origen del Prospecto / utm_source con "WhatsApp" o "CA_Facebook_Whatsapp", y (2) <code>utm_id</code> que contenga "genjo". Leads corregidos: <strong>568 → 796 AState</strong> / <strong>175 → 234 TxState</strong>.</div>
+      </div>
+
+      <div class="note-item green">
+        <div class="note-tag" style="color:#4ade80">✅ Regla fija</div>
+        <div class="note-title">Fuente de datos — regla de oro</div>
+        <div class="note-body"><strong>Leads: siempre desde Salesforce.</strong> Los panoramas de Datorama solo se usan para la inversión por canal. No mezclar: Datorama puede mostrar leads de sesión, no leads cualificados de SF. El CPL = inversión Datorama ÷ leads Salesforce.</div>
+      </div>
+
+      <div class="note-item">
+        <div class="note-tag" style="color:#93c5fd">📌 Filtros BDD</div>
+        <div class="note-title">Filtros por universidad — C.2026</div>
+        <div class="note-body">
+          <strong>AState C.2026:</strong> filtro <code>Mkt Digital</code> (no "All Digital").<br>
+          <strong>TxState C.2026:</strong> filtro <code>OC</code> (Origen Conjunto).<br>
+          C.2026 = Fall 2026 + Spring 2026 (ago 2025 – jun 2026). Corte: 24 jun 2026. Los leads se cuentan con stage_date ≤ fecha de corte.
+        </div>
+      </div>
+
+      <div class="note-item yellow">
+        <div class="note-tag" style="color:#fbbf24">⚠️ Dato incompleto</div>
+        <div class="note-title">Datorama Diciembre 2025</div>
+        <div class="note-body">Los archivos de diciembre están <strong>incompletos</strong> en Datorama: AState muestra solo $1,885 MXN y TxState $5,104 MXN — claramente parciales. Para diciembre se usan los valores del <code>v4.xlsx</code> como fuente autoritativa.</div>
+      </div>
+
+      <div class="note-item yellow">
+        <div class="note-tag" style="color:#fbbf24">⚠️ Ajuste de inversión</div>
+        <div class="note-title">Google AState en v4 — fee de agencia</div>
+        <div class="note-body">La inversión de Google en el panorama v4 para AState <strong>ya incluye el fee de agencia (~41-47%)</strong> sobre el costo puro de media de Datorama. Al comparar contra otros canales, considerar que Google tiene este costo adicional estructural.</div>
+      </div>
+
+      <div class="note-item green">
+        <div class="note-tag" style="color:#4ade80">✅ Corregido — Inversión WA/Meta separada para ambas universidades</div>
+        <div class="note-title">Inversión WA vs Meta — TxState y AState C.2026 recalculada desde Datorama</div>
+        <div class="note-body">
+          Los archivos mensuales de Datorama (<code>tx_oct/nov/dic_25.xlsx</code> y <code>ak_oct/nov/dic_25.xlsx</code>) contienen la campaña <strong>"FB Clicks to WhatsApp"</strong> como línea separada con costo granular. Ene–May 2026 viene del archivo consolidado <code>TX_Data / AK_Data por Plataforma por dia.xlsx</code>.<br><br>
+          <strong>TxState WA C.2026:</strong> $741,976 MXN total → CPL/Lead $3,171. Solo 1 DP (muestra pequeña).<br>
+          <strong>AState WA C.2026:</strong> $1,423,226 MXN total → CPL/Lead $1,788 · CPL/DP <strong>$65k</strong> (mejor canal del ciclo).<br><br>
+          Los CPLs previos usaban inversiones aproximadas del panorama v4 donde Meta+WA estaban combinados. Los valores en los documentos reflejan ya la corrección.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="meta-pane" id="meta-pasos">
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">Confirmar filtro TxState C.2025 con Power BI <span class="step-badge badge-pend">Pendiente</span></div>
+          <div class="step-desc">TxState C.2025 puede tener un filtro OC (~2,467 leads) o Mkt Digital (~2,442 leads). La diferencia es pequeña pero afecta los CPL. Validar contra el reporte de PBI antes de cerrar la planeación.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Pulir atribución WhatsApp en Salesforce <span class="step-badge badge-next">C.2027</span></div>
+          <div class="step-desc">Coordinar con Ely / Genjo para que la campaña "EKN - Click to WhatsApp" popule correctamente el campo Facebook Campaign Name en SF. Actualmente hay que hacer el cruce manual por utm_id=genjo, lo cual es frágil si cambia el naming.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">Actualizar datos al cierre de C.2026 <span class="step-badge badge-pend">Ago 2026</span></div>
+          <div class="step-desc">El corte actual es 31 mayo 2026. Al cierre del ciclo (agosto 2026), actualizar los leads finales de Salesforce y la inversión completa de Datorama, incluyendo diciembre 2025 cuando estén los archivos completos.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-title">Extender análisis a TxState C.2024 <span class="step-badge badge-next">Opcional</span></div>
+          <div class="step-desc">Los datos históricos de TxState C.2024 no están en el análisis actual por falta de Datorama de ese ciclo. Si se consiguen los panoramas de inversión, se puede completar la serie histórica para tener tres ciclos comparables en TxState.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <div class="step-title">Separación Meta/WA TxState C.2026 ✅ — TxState C.2025 pendiente <span class="step-badge" style="background:#166534;color:#4ade80">Parcialmente resuelto</span></div>
+          <div class="step-desc">C.2026 ya tiene inversiones separadas desde archivos Datorama (tx_oct/nov/dic_25 + consolidado). Para C.2025 de TxState aún no hay archivos mensuales con desglose WA/Meta en OneDrive — solicitar al equipo de medios o a la agencia el reporte de Meta Ads Manager filtrado por tipo de objetivo (Messages vs Website).</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <span>EEH · Planeación 2027 · CourtAvenue / Velocity AI</span>
+  <span>Generado 8 jun 2026 · Leads: Salesforce · Inversión: Datorama / Panoramas v4</span>
+</div>
+
+<script>
+function setMeta(id,el){
+  document.querySelectorAll('.meta-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.meta-pane').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('meta-'+id).classList.add('active');
+}
+</script>
+
+</div><!-- end .page-body -->
+</body>
+</html>

@@ -9,7 +9,9 @@
 (function () {
   var PAGES = [
     { file: 'funneles_ciclos.html',   label: 'Funneles' },
+    { file: 'conversion_etapas.html', label: 'Conversión' },
     { file: 'cpl_etapas.html',        label: 'CPL Etapas' },
+    { file: 'cpl_campanas.html',      label: 'CPL Campañas' },
     { file: 'canal_rentabilidad.html',label: 'CPL Plataformas' },
     { file: 'leads_perdidos.html',    label: 'Leads Perdidos' },
     { file: 'comparativo.html',       label: 'Comparativo' }

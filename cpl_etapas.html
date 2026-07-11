@@ -42,7 +42,7 @@
   <h1>CPL por Etapa de Funnel — AState &amp; TxState</h1>
   <div style="display:flex;align-items:center;gap:10px;margin:6px 0 4px">
     <span id="corte-badge" style="background:#f59e0b22;border:1px solid #f59e0b;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700;color:#f59e0b;letter-spacing:.04em">📅 Corte: 24 jun 2026</span>
-    <span id="tr-badge" style="background:#3b82f622;border:1px solid #3b82f6;border-radius:6px;padding:3px 10px;font-size:11px;color:#93c5fd">TR: TR_Huge_062526.xlsx</span>
+    <span id="tr-badge" style="background:#3b82f622;border:1px solid #3b82f6;border-radius:6px;padding:3px 10px;font-size:11px;color:#93c5fd">TR: TR_Huge_071126.xlsx</span>
   </div>
   <p class="sub" id="cpl-sub">Costo por lead en cada etapa de conversión · Inversión MXN ÷ # de registros · C.2026: Track Report all_track_2026.xlsx · WA def D (LeadSource WA + utm_id=genjo + LeadManagement=Genjo) · 8 jun 2026</p>
 </div>
@@ -80,56 +80,56 @@ const ASTATE = {
     'Google': {
       'C.2024': [6473,10005,26013,26381,35175,94793,101687,133161],
       'C.2025': [211,1297,6384,6719,13326,43812,47033,68048],
-      'C.2026': [208,510,3382,4056,7477,26169,32326,42273],
+      'C.2026': [203,498,3304,3962,7305,25566,31581,40318],
     },
     'Meta': {
       'C.2024': [852,1696,5446,5677,11554,47434,53806,85833],
       'C.2025': [1027,2391,5671,6015,12362,48465,52654,82018],
-      'C.2026': [920,2449,7121,8572,16439,91787,115941,200262],
+      'C.2026': [899,2393,6957,8374,16060,89671,113268,191058],
     },
     'WhatsApp': {
       'C.2025': [1956,2943,10229,10909,20410,96282,100659,147633],
-      'C.2026': [15910,17059,32552,36411,64874,230302,242423,400525],
+      'C.2026': [15543,16666,31801,35572,63378,224992,236834,374155],
     },
   },
   total: {
-    // Inversión total ÷ leads REALES por etapa · TR_Huge_062526.xlsx scope Digital (4 canales) · Datorama actuals
+    // Inversión total ÷ leads REALES por etapa · TR_Huge_071126.xlsx scope Digital (4 canales) · Datorama actuals
     'C.2024': [948,1496,4849,4987,8091,24401,27571,37098],
     'C.2025': [426,1436,4091,4301,7737,27399,29460,45197],
-    'C.2026': [850,1937,5373,6147,9968,38431,45221,66501],
+    'C.2026': [830,1892,5249,6005,9738,37545,44178,62813],
   },
-  inv: { 'C.2024':7753583, 'C.2025':10621365, 'C.2026':13566218 },
+  inv: { 'C.2024':7753583, 'C.2025':10621365, 'C.2026':13253443 },
 };
 
 const TXSTATE = {
   channels: {
     'Google': {
       'C.2025': [166,1526,8194,8685,17725,72376,96502,144753],
-      'C.2026': [336,846,3202,4088,7390,64042,64042,192127],
+      'C.2026': [342,860,3256,4157,7515,65129,65129,144045],
     },
     'Meta': {
       'C.2025': [1001,2929,8063,8534,22864,180225,218845,278530],
-      'C.2026': [481,1316,6811,8032,25159,234177,234177,338255],
+      'C.2026': [489,1338,6927,8168,25586,238150,238150,349087],
     },
     'WhatsApp': {
       // TxState WA C.2025 omitido: sin inversión Datorama WA desglosada para C.2025
-      'C.2026': [3899,4608,8063,8760,19710,141912,177390,709558],
+      'C.2026': [3965,4686,8200,8909,20044,144320,180400,721596],
     },
   },
   total: {
-    // Inversión total ÷ leads REALES por etapa · TR_Huge_062526.xlsx scope Digital (4 canales) · Datorama actuals
+    // Inversión total ÷ leads REALES por etapa · TR_Huge_071126.xlsx scope Digital (4 canales) · Datorama actuals
     'C.2025': [566,2230,7462,7950,18047,93565,114749,155941],
-    'C.2026': [768,1931,7497,8674,19489,116932,135121,225202],
+    'C.2026': [781,1964,7624,8821,19820,118916,137413,206121],
   },
-  inv: { 'C.2025':6081691, 'C.2026':6080463 },
+  inv: { 'C.2025':6081691, 'C.2026':6183625 },
 };
 
 const CICLO_COLORS = { 'C.2024':'#94a3b8', 'C.2025':'#3b82f6', 'C.2026':'#f59e0b' };
 const CICLO_DASHES = { 'C.2024':'6,3', 'C.2025':'0', 'C.2026':'0' };
 
 // ── helpers dinámicos — actualizados automáticamente por sync_html.py ──
-const CORTE_LABEL = '24 jun 2026';                            // sync_html.py actualiza este valor
-const TR_FILE     = 'TR_Huge_062526.xlsx';       // sync_html.py actualiza este valor
+const CORTE_LABEL = '11 jul 2026';                            // sync_html.py actualiza este valor
+const TR_FILE     = 'TR_Huge_071126.xlsx';       // sync_html.py actualiza este valor
 function niDP(d,c){ const v=(d.total[c]||[])[7]; return v?Math.round((d.inv[c]||0)/v):0; }
 function fmtObs(v){ return v>=1e6?`$${(v/1e6).toFixed(1)}M`:`$${Math.round(v).toLocaleString('es-MX')}`; }
 function pctChg(a,b){ return (a&&b)?Math.round((b-a)/a*100):0; }

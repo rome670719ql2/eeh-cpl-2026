@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conversión por etapa — AState & TxState</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  html, body { overflow-x: hidden; max-width: 100%; }
+  .page-body { overflow-x: hidden; }
+
+  /* badges header */
+  .hdr-badges { display:flex; align-items:center; gap:10px; margin:6px 0 4px; flex-wrap:wrap; }
+  .bdg { border-radius:6px; padding:3px 10px; font-size:11px; font-weight:700; letter-spacing:.03em; }
+  .bdg-corte { background:#f59e0b22; border:1px solid #f59e0b; color:#f59e0b; }
+  .bdg-tr    { background:#3b82f622; border:1px solid #3b82f6; color:#93c5fd; font-weight:600; }
+  .bdg-scope { background:#22c55e22; border:1px solid #22c55e; color:#4ade80; }
+
+  /* selector de ciclo (embudo) */
+  .cyc-pills { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:18px; align-items:center; }
+  .cyc-lead { font-size:10.5px; color:var(--txt-dim); text-transform:uppercase; letter-spacing:.07em; font-weight:700; margin-right:4px; }
+  .cyc-pill { padding:6px 16px; border-radius:8px; cursor:pointer; font-size:12.5px; font-weight:700;
+              border:1px solid var(--border); background:var(--bg-panel); color:var(--txt-muted); transition:.15s; font-family:inherit; }
+  .cyc-pill:hover { border-color:var(--blue); color:var(--blue-light); }
+  .cyc-pill.active { background:var(--blue); color:#fff; border-color:var(--blue); }
+
+  /* hero KPIs */
+  .hero { display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:14px; margin-bottom:26px; }
+  .hero-main { background:linear-gradient(135deg,#0c1829,#0a1020); border:1px solid var(--blue-deep); border-radius:var(--r-lg); padding:20px 22px; }
+  .hero-main .hm-lbl { font-size:11px; color:var(--txt-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; }
+  .hero-main .hm-val { font-size:44px; font-weight:800; color:#fbbf24; line-height:1; }
+  .hero-main .hm-sub { font-size:12px; color:var(--txt-secondary); margin-top:8px; line-height:1.5; }
+  .hero-k { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r-lg); padding:18px 18px; display:flex; flex-direction:column; justify-content:center; }
+  .hero-k .hk-val { font-size:26px; font-weight:800; color:#fff; line-height:1; }
+  .hero-k .hk-lbl { font-size:11px; color:var(--txt-muted); text-transform:uppercase; letter-spacing:.05em; margin-top:7px; }
+  .hero-k .hk-note { font-size:11px; color:var(--txt-dim); margin-top:4px; }
+
+  /* funnel stage rows */
+  .funnel-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r-lg); padding:22px 24px; margin-bottom:26px; }
+  .fc-ttl { font-size:15px; font-weight:700; color:var(--blue-light); margin-bottom:4px; }
+  .fc-note { font-size:11.5px; color:var(--txt-dim); margin-bottom:20px; line-height:1.55; }
+  .cstage { display:grid; grid-template-columns:132px 1fr 250px; align-items:center; gap:14px; padding:8px 0; border-bottom:1px solid var(--border-subtle); }
+  .cstage:last-child { border-bottom:none; }
+  .cstage.worst { background:#2b0f0f55; border-radius:8px; padding-left:8px; padding-right:8px; margin:0 -8px; border-bottom:1px solid #3a1414; }
+  .cs-lbl { text-align:right; }
+  .cs-name { font-size:13px; color:var(--txt-secondary); font-weight:700; }
+  .cs-cum { font-size:16px; color:#fff; font-weight:800; line-height:1.15; }
+  .cs-cap { font-size:9.5px; color:var(--txt-dim); text-transform:uppercase; letter-spacing:.04em; }
+  .cs-track { position:relative; height:30px; background:#0a1020; border-radius:5px; overflow:hidden; }
+  .cs-fill { height:100%; border-radius:5px; min-width:3px; transition:width .5s;
+             background:linear-gradient(90deg,#1e3a8a,#3b82f6); display:flex; align-items:center; }
+  .cs-fill.dp { background:linear-gradient(90deg,#a16207,#fbbf24); }
+  .cs-inpct { font-size:11px; font-weight:800; color:#fff; padding-left:8px; white-space:nowrap; }
+  .cs-metrics { display:flex; gap:8px; }
+  .cs-chip { flex:1; border-radius:7px; padding:6px 9px; text-align:center; }
+  .cs-chip .cc-k { font-size:8.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--txt-dim); font-weight:700; }
+  .cs-chip .cc-v { font-size:15px; font-weight:800; line-height:1.15; margin-top:1px; }
+  .chip-acum { background:#0c1829; border:1px solid #17325e; }
+  .chip-acum .cc-v { color:#93c5fd; }
+  .chip-step { border:1px solid var(--border); }
+  .chip-step .cc-sub { font-size:9px; margin-top:1px; font-weight:700; }
+  .step-good { background:#0c2b1a; border-color:#166534; } .step-good .cc-v{ color:#4ade80; } .step-good .cc-sub{ color:#4ade80; }
+  .step-ok   { background:#2a1f06; border-color:#78350f; } .step-ok .cc-v{ color:#fbbf24; }   .step-ok .cc-sub{ color:#fbbf24; }
+  .step-bad  { background:#2b0f0f; border-color:#7f1d1d; } .step-bad .cc-v{ color:#f87171; }   .step-bad .cc-sub{ color:#f87171; }
+
+  .funnel-legend { display:flex; gap:22px; flex-wrap:wrap; margin-top:16px; padding-top:14px; border-top:1px solid var(--border); }
+  .fl-i { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--txt-secondary); }
+  .fl-sq { width:13px; height:13px; border-radius:3px; flex-shrink:0; }
+
+  /* leak callout */
+  .leak { background:#1a0a0a; border:1px solid #7f1d1d; border-radius:var(--r); padding:16px 20px; margin-bottom:26px; }
+  .leak-ttl { font-size:12px; font-weight:700; color:#f87171; text-transform:uppercase; letter-spacing:.06em; margin-bottom:12px; }
+  .leak-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  .leak-i { background:#070b12; border-radius:8px; padding:12px 14px; border-left:3px solid #dc2626; }
+  .leak-tr { font-size:13px; font-weight:700; color:#fca5a5; margin-bottom:4px; }
+  .leak-big { font-size:22px; font-weight:800; color:#f87171; line-height:1; }
+  .leak-sub { font-size:11px; color:var(--txt-muted); margin-top:5px; line-height:1.45; }
+
+  /* cycle legend */
+  .cyc-legend { display:flex; gap:18px; flex-wrap:wrap; margin:2px 0 16px; }
+  .cyc-li { display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--txt-secondary); font-weight:600; }
+  .cyc-sq { width:14px; height:14px; border-radius:4px; flex-shrink:0; }
+
+  /* comparison table */
+  .cmp-tbl-wrap { overflow-x:auto; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r); margin-bottom:26px; }
+  table.cmp-tbl { width:100%; border-collapse:collapse; font-size:13px; min-width:640px; }
+  .cmp-tbl th, .cmp-tbl td { padding:9px 12px; text-align:right; border-bottom:1px solid var(--border); white-space:nowrap; }
+  .cmp-tbl th:first-child, .cmp-tbl td:first-child { text-align:left; }
+  .cmp-tbl thead .grp th { color:#93c5fd; text-transform:uppercase; font-size:10.5px; letter-spacing:.05em; text-align:center; border-bottom:1px solid var(--border); padding-bottom:5px; }
+  .cmp-tbl thead .sub th { color:var(--txt-dim); text-transform:uppercase; font-size:9.5px; letter-spacing:.03em; padding-top:4px; }
+  .cmp-tbl td.stage { color:var(--txt-secondary); font-weight:700; }
+  .cmp-tbl td.acum { color:#fff; font-weight:800; }
+  .cmp-tbl td.step { color:var(--txt-muted); font-weight:600; }
+  .cmp-tbl tbody tr:hover td { background:#0c1424; }
+  .grp-div { border-left:1px solid var(--border); }
+
+  /* svg chart */
+  .chart-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r-lg); padding:22px 24px; margin-bottom:26px; }
+  .chart-card .cc-ttl { font-size:15px; font-weight:700; color:var(--blue-light); margin-bottom:4px; }
+  .chart-card .cc-note { font-size:11.5px; color:var(--txt-dim); margin-bottom:16px; line-height:1.55; }
+  svg.stepchart { width:100%; height:auto; display:block; overflow:visible; }
+
+  @media (max-width:900px){
+    .hero { grid-template-columns:1fr 1fr; }
+    .hero-main { grid-column:1/-1; }
+    .cstage { grid-template-columns:88px 1fr; }
+    .cs-metrics { grid-column:1/-1; margin-top:6px; }
+    .leak-grid { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="site-nav" id="site-nav"></nav>
+
+<div class="page-body">
+
+<div class="page-header">
+  <h1>Conversión por etapa del funnel — Arkansas State &amp; Texas State</h1>
+  <div class="hdr-badges">
+    <span class="bdg bdg-corte">📅 Corte: 11 jul 2026</span>
+    <span class="bdg bdg-tr">TR: TR_Huge_071126.xlsx</span>
+    <span class="bdg bdg-scope">🎯 Scope: Digital</span>
+  </div>
+  <p class="sub">La tasa de conversión en <strong>cada punto del funnel</strong>, medida de dos formas: <strong>acumulada</strong> (qué % del total de leads llegó a esa etapa) y <strong>paso a paso</strong> (qué % pasó de la etapa anterior a la siguiente). La conversión global a inscrito (DP / Down Payment) ronda el <strong>1.3%</strong> — aquí se ve exactamente <strong>en qué etapa se pierde</strong> cada punto porcentual. Etapas: Lead → Válido → Perfilado → Citado → Asistido → AdmFee → ITEP → DP.</p>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showUni('AState',this)">AState · Arkansas</div>
+  <div class="tab" onclick="showUni('TxState',this)">TxState · Texas</div>
+  <div class="tab" onclick="showUni('EEH',this)">EEH · Combinado</div>
+</div>
+
+<div id="content"></div>
+
+</div><!-- end .page-body -->
+
+<div class="page-notes">
+  <p class="pn-title">Cómo leer esta página</p>
+  <div class="pn-grid">
+    <div class="pn-item">
+      <div class="pn-tag" style="color:#93c5fd">📊 Conversión acumulada</div>
+      <div class="pn-body">Del <strong>total de leads</strong> del ciclo, qué % llegó a esa etapa <em>o más allá</em>. Es la lectura de "embudo": arranca en 100% (Lead) y cae hasta la conversión final a <code>DP</code> (~1.3%). El ancho de barra es esta métrica.</div>
+    </div>
+    <div class="pn-item green">
+      <div class="pn-tag" style="color:#4ade80">🔁 Conversión paso a paso</div>
+      <div class="pn-body">Qué % de los que llegaron a la etapa <strong>anterior</strong> pasó a esta. Aísla la fuga de <em>cada transición</em>: verde = pasa la mayoría, rojo = se cae la mayoría. Es donde se ataca la operación.</div>
+    </div>
+    <div class="pn-item amber">
+      <div class="pn-tag" style="color:#fbbf24">🎯 Scope y fuente</div>
+      <div class="pn-body">Universo <strong>Digital</strong> (mismos Orígenes Conjunto que el CPL: Web, Redes, MailChimp, Llamada/Visita, Campus; se excluye ruido de <code>utm_id</code>). Fuente <code>TR_Huge_071126.xlsx</code>, corte 11-jul-2026. Misma definición de etapas que Leads Perdidos.</div>
+    </div>
+  </div>
+</div>
+
+<div class="page-footer">
+  <span>EEH · Planeación 2027 · CourtAvenue / Velocity AI</span>
+  <span>Fuente leads: TR_Huge_071126.xlsx · Corte 11 jul 2026 · Scope Digital</span>
+</div>
+
+<script>
+const DATA = {"_meta":{"corte":"corte 11-jul-2026","tr":"TR_Huge_071126.xlsx","scope":"Digital","stages":["Lead","Válido","Perfilado","Citado","Asistido","AdmFee","ITEP","DP"],"cohortes":["C.2024","C.2025","C.2026"]},"AState":{"C.2024":{"total":9622,"reached":{"Lead":3522,"Válido":4219,"Perfilado":52,"Citado":700,"Asistido":753,"AdmFee":20,"ITEP":110,"DP":246},"cum_reached":{"Lead":9622,"Válido":6100,"Perfilado":1881,"Citado":1829,"Asistido":1129,"AdmFee":376,"ITEP":356,"DP":246},"conv_acum":{"Lead":100.0,"Válido":63.4,"Perfilado":19.55,"Citado":19.01,"Asistido":11.73,"AdmFee":3.91,"ITEP":3.7,"DP":2.56},"conv_step":{"Lead":100.0,"Válido":63.4,"Perfilado":30.84,"Citado":97.24,"Asistido":61.73,"AdmFee":33.3,"ITEP":94.68,"DP":69.1},"drop_step":{"Lead":0.0,"Válido":36.6,"Perfilado":69.16,"Citado":2.76,"Asistido":38.27,"AdmFee":66.7,"ITEP":5.32,"DP":30.9},"drop_n":{"Lead":0,"Válido":3522,"Perfilado":4219,"Citado":52,"Asistido":700,"AdmFee":753,"ITEP":20,"DP":110}},"C.2025":{"total":24794,"reached":{"Lead":17314,"Válido":4895,"Perfilado":125,"Citado":1091,"Asistido":975,"AdmFee":6,"ITEP":126,"DP":262},"cum_reached":{"Lead":24794,"Válido":7480,"Perfilado":2585,"Citado":2460,"Asistido":1369,"AdmFee":394,"ITEP":388,"DP":262},"conv_acum":{"Lead":100.0,"Válido":30.17,"Perfilado":10.43,"Citado":9.92,"Asistido":5.52,"AdmFee":1.59,"ITEP":1.56,"DP":1.06},"conv_step":{"Lead":100.0,"Válido":30.17,"Perfilado":34.56,"Citado":95.16,"Asistido":55.65,"AdmFee":28.78,"ITEP":98.48,"DP":67.53},"drop_step":{"Lead":0.0,"Válido":69.83,"Perfilado":65.44,"Citado":4.84,"Asistido":44.35,"AdmFee":71.22,"ITEP":1.52,"DP":32.47},"drop_n":{"Lead":0,"Válido":17314,"Perfilado":4895,"Citado":125,"Asistido":1091,"AdmFee":975,"ITEP":6,"DP":126}},"C.2026":{"total":16491,"reached":{"Lead":9167,"Válido":4767,"Perfilado":328,"Citado":849,"Asistido":1017,"AdmFee":21,"ITEP":131,"DP":211},"cum_reached":{"Lead":16491,"Válido":7324,"Perfilado":2557,"Citado":2229,"Asistido":1380,"AdmFee":363,"ITEP":342,"DP":211},"conv_acum":{"Lead":100.0,"Válido":44.41,"Perfilado":15.51,"Citado":13.52,"Asistido":8.37,"AdmFee":2.2,"ITEP":2.07,"DP":1.28},"conv_step":{"Lead":100.0,"Válido":44.41,"Perfilado":34.91,"Citado":87.17,"Asistido":61.91,"AdmFee":26.3,"ITEP":94.21,"DP":61.7},"drop_step":{"Lead":0.0,"Válido":55.59,"Perfilado":65.09,"Citado":12.83,"Asistido":38.09,"AdmFee":73.7,"ITEP":5.79,"DP":38.3},"drop_n":{"Lead":0,"Válido":9167,"Perfilado":4767,"Citado":328,"Asistido":849,"AdmFee":1017,"ITEP":21,"DP":131}}},"TxState":{"C.2024":{"total":20,"reached":{"Lead":5,"Válido":6,"Perfilado":1,"Citado":8,"Asistido":0,"AdmFee":0,"ITEP":0,"DP":0},"cum_reached":{"Lead":20,"Válido":15,"Perfilado":9,"Citado":8,"Asistido":0,"AdmFee":0,"ITEP":0,"DP":0},"conv_acum":{"Lead":100.0,"Válido":75.0,"Perfilado":45.0,"Citado":40.0,"Asistido":0.0,"AdmFee":0.0,"ITEP":0.0,"DP":0.0},"conv_step":{"Lead":100.0,"Válido":75.0,"Perfilado":60.0,"Citado":88.89,"Asistido":0.0,"AdmFee":0.0,"ITEP":0.0,"DP":0.0},"drop_step":{"Lead":0.0,"Válido":25.0,"Perfilado":40.0,"Citado":11.11,"Asistido":100.0,"AdmFee":0.0,"ITEP":0.0,"DP":0.0},"drop_n":{"Lead":0,"Válido":5,"Perfilado":6,"Citado":1,"Asistido":8,"AdmFee":0,"ITEP":0,"DP":0}},"C.2025":{"total":10736,"reached":{"Lead":7984,"Válido":1938,"Perfilado":50,"Citado":427,"Asistido":271,"AdmFee":4,"ITEP":17,"DP":45},"cum_reached":{"Lead":10736,"Válido":2752,"Perfilado":814,"Citado":764,"Asistido":337,"AdmFee":66,"ITEP":62,"DP":45},"conv_acum":{"Lead":100.0,"Válido":25.63,"Perfilado":7.58,"Citado":7.12,"Asistido":3.14,"AdmFee":0.61,"ITEP":0.58,"DP":0.42},"conv_step":{"Lead":100.0,"Válido":25.63,"Perfilado":29.58,"Citado":93.86,"Asistido":44.11,"AdmFee":19.58,"ITEP":93.94,"DP":72.58},"drop_step":{"Lead":0.0,"Válido":74.37,"Perfilado":70.42,"Citado":6.14,"Asistido":55.89,"AdmFee":80.42,"ITEP":6.06,"DP":27.42},"drop_n":{"Lead":0,"Válido":7984,"Perfilado":1938,"Citado":50,"Asistido":427,"AdmFee":271,"ITEP":4,"DP":17}},"C.2026":{"total":8056,"reached":{"Lead":4819,"Válido":2418,"Perfilado":112,"Citado":397,"Asistido":255,"AdmFee":6,"ITEP":19,"DP":30},"cum_reached":{"Lead":8056,"Válido":3237,"Perfilado":819,"Citado":707,"Asistido":310,"AdmFee":55,"ITEP":49,"DP":30},"conv_acum":{"Lead":100.0,"Válido":40.18,"Perfilado":10.17,"Citado":8.78,"Asistido":3.85,"AdmFee":0.68,"ITEP":0.61,"DP":0.37},"conv_step":{"Lead":100.0,"Válido":40.18,"Perfilado":25.3,"Citado":86.32,"Asistido":43.85,"AdmFee":17.74,"ITEP":89.09,"DP":61.22},"drop_step":{"Lead":0.0,"Válido":59.82,"Perfilado":74.7,"Citado":13.68,"Asistido":56.15,"AdmFee":82.26,"ITEP":10.91,"DP":38.78},"drop_n":{"Lead":0,"Válido":4819,"Perfilado":2418,"Citado":112,"Asistido":397,"AdmFee":255,"ITEP":6,"DP":19}}},"EEH":{"C.2024":{"total":9642,"reached":{"Lead":3527,"Válido":4225,"Perfilado":53,"Citado":708,"Asistido":753,"AdmFee":20,"ITEP":110,"DP":246},"cum_reached":{"Lead":9642,"Válido":6115,"Perfilado":1890,"Citado":1837,"Asistido":1129,"AdmFee":376,"ITEP":356,"DP":246},"conv_acum":{"Lead":100.0,"Válido":63.42,"Perfilado":19.6,"Citado":19.05,"Asistido":11.71,"AdmFee":3.9,"ITEP":3.69,"DP":2.55},"conv_step":{"Lead":100.0,"Válido":63.42,"Perfilado":30.91,"Citado":97.2,"Asistido":61.46,"AdmFee":33.3,"ITEP":94.68,"DP":69.1},"drop_step":{"Lead":0.0,"Válido":36.58,"Perfilado":69.09,"Citado":2.8,"Asistido":38.54,"AdmFee":66.7,"ITEP":5.32,"DP":30.9},"drop_n":{"Lead":0,"Válido":3527,"Perfilado":4225,"Citado":53,"Asistido":708,"AdmFee":753,"ITEP":20,"DP":110}},"C.2025":{"total":35530,"reached":{"Lead":25298,"Válido":6833,"Perfilado":175,"Citado":1518,"Asistido":1246,"AdmFee":10,"ITEP":143,"DP":307},"cum_reached":{"Lead":35530,"Válido":10232,"Perfilado":3399,"Citado":3224,"Asistido":1706,"AdmFee":460,"ITEP":450,"DP":307},"conv_acum":{"Lead":100.0,"Válido":28.8,"Perfilado":9.57,"Citado":9.07,"Asistido":4.8,"AdmFee":1.29,"ITEP":1.27,"DP":0.86},"conv_step":{"Lead":100.0,"Válido":28.8,"Perfilado":33.22,"Citado":94.85,"Asistido":52.92,"AdmFee":26.96,"ITEP":97.83,"DP":68.22},"drop_step":{"Lead":0.0,"Válido":71.2,"Perfilado":66.78,"Citado":5.15,"Asistido":47.08,"AdmFee":73.04,"ITEP":2.17,"DP":31.78},"drop_n":{"Lead":0,"Válido":25298,"Perfilado":6833,"Citado":175,"Asistido":1518,"AdmFee":1246,"ITEP":10,"DP":143}},"C.2026":{"total":24547,"reached":{"Lead":13986,"Válido":7185,"Perfilado":440,"Citado":1246,"Asistido":1272,"AdmFee":27,"ITEP":150,"DP":241},"cum_reached":{"Lead":24547,"Válido":10561,"Perfilado":3376,"Citado":2936,"Asistido":1690,"AdmFee":418,"ITEP":391,"DP":241},"conv_acum":{"Lead":100.0,"Válido":43.02,"Perfilado":13.75,"Citado":11.96,"Asistido":6.88,"AdmFee":1.7,"ITEP":1.59,"DP":0.98},"conv_step":{"Lead":100.0,"Válido":43.02,"Perfilado":31.97,"Citado":86.97,"Asistido":57.56,"AdmFee":24.73,"ITEP":93.54,"DP":61.64},"drop_step":{"Lead":0.0,"Válido":56.98,"Perfilado":68.03,"Citado":13.03,"Asistido":42.44,"AdmFee":75.27,"ITEP":6.46,"DP":38.36},"drop_n":{"Lead":0,"Válido":13986,"Perfilado":7185,"Citado":440,"Asistido":1246,"AdmFee":1272,"ITEP":27,"DP":150}}}};
+const SN  = DATA._meta.stages;                 // Lead..DP
+const CYC = DATA._meta.cohortes;               // C.2024, C.2025, C.2026
+const CYC_COLOR = { 'C.2024':'#7c8aa5', 'C.2025':'#fbbf24', 'C.2026':'#38bdf8' };
+let curUni = 'AState';
+let curCyc = null;
+
+function fmt(n){ return (n==null?0:n).toLocaleString('es-MX'); }
+function pct(n){ return (n==null?0:n).toFixed(n>=10?1:2) + '%'; }
+
+// ciclos con muestra suficiente para la universidad
+function validCycles(uni){
+  return CYC.filter(function(c){ return DATA[uni][c] && DATA[uni][c].total >= 100; });
+}
+function stepClass(dropStep){
+  if (dropStep >= 55) return 'step-bad';
+  if (dropStep >= 40) return 'step-ok';
+  return 'step-good';
+}
+
+function showUni(uni, el){
+  curUni = uni;
+  document.querySelectorAll('.tabs .tab').forEach(function(t){ t.classList.remove('active'); });
+  if (el) el.classList.add('active');
+  var vc = validCycles(uni);
+  curCyc = vc[vc.length-1];   // ciclo más reciente con datos
+  render();
+}
+
+function setCyc(c){ curCyc = c; render(); }
+
+function render(){
+  var uni = curUni;
+  var vc  = validCycles(uni);
+  if (curCyc === null || vc.indexOf(curCyc) < 0) curCyc = vc[vc.length-1];
+  var d = DATA[uni][curCyc];
+  var html = '';
+
+  // ── hero KPIs ──
+  var dpAcum = d.conv_acum['DP'];
+  html += '<div class="hero">';
+  html += '<div class="hero-main"><div class="hm-lbl">Conversión global a inscrito · DP / Lead · '+curCyc+'</div>'+
+          '<div class="hm-val">'+pct(dpAcum)+'</div>'+
+          '<div class="hm-sub">De <b style="color:#fff">'+fmt(d.total)+'</b> leads, <b style="color:#fbbf24">'+fmt(d.cum_reached['DP'])+'</b> llegaron a Down Payment. '+
+          'Cada etapa de abajo muestra cuánto de esa caída ocurre en cada punto.</div></div>';
+  html += '<div class="hero-k"><div class="hk-val">'+pct(d.conv_acum['Citado'])+'</div><div class="hk-lbl">Llega a Citado (acum.)</div>'+
+          '<div class="hk-note">'+fmt(d.cum_reached['Citado'])+' leads agendaron cita</div></div>';
+  html += '<div class="hero-k"><div class="hk-val">'+pct(d.conv_acum['Asistido'])+'</div><div class="hk-lbl">Llega a Asistido (acum.)</div>'+
+          '<div class="hk-note">'+fmt(d.cum_reached['Asistido'])+' asistieron a la cita</div></div>';
+  html += '</div>';
+
+  // ── selector de ciclo para el embudo ──
+  html += '<div class="cyc-pills"><span class="cyc-lead">Embudo del ciclo</span>';
+  vc.forEach(function(c){
+    html += '<button class="cyc-pill'+(c===curCyc?' active':'')+'" onclick="setCyc(\''+c+'\')">'+c+'</button>';
+  });
+  html += '</div>';
+
+  // ── identificar las 2 peores fugas por leads perdidos (transiciones, i>=1) ──
+  var trans = [];
+  for (var i=1;i<SN.length;i++){
+    trans.push({ i:i, stage:SN[i], from:SN[i-1], dropN:d.drop_n[SN[i]], dropStep:d.drop_step[SN[i]] });
+  }
+  var worstByN   = trans.slice().sort(function(a,b){ return b.dropN - a.dropN; });
+  var worstStages = {}; worstByN.slice(0,2).forEach(function(t){ worstStages[t.stage]=true; });
+
+  // ── embudo por etapa ──
+  html += '<div class="funnel-card"><div class="fc-ttl">Embudo de conversión — '+uni+' · '+curCyc+'</div>'+
+          '<div class="fc-note">El ancho de barra es la conversión <b>acumulada</b> (% del total que llegó a la etapa). A la derecha, la <b>acumulada</b> y la <b>paso a paso</b> (% que pasó desde la etapa previa). Las filas en rojo son donde se pierden más leads en números absolutos.</div>';
+  SN.forEach(function(s, idx){
+    var acum = d.conv_acum[s], step = d.conv_step[s], drop = d.drop_step[s], dn = d.drop_n[s];
+    var isDP = (s==='DP');
+    var worst = worstStages[s];
+    var w = Math.max(acum, 0.6);   // ancho = acumulada (mín visible)
+    html += '<div class="cstage'+(worst?' worst':'')+'">';
+    html += '<div class="cs-lbl"><div class="cs-name">'+s+'</div><div class="cs-cum">'+fmt(d.cum_reached[s])+'</div><div class="cs-cap">leads</div></div>';
+    html += '<div class="cs-track"><div class="cs-fill'+(isDP?' dp':'')+'" style="width:'+w+'%"><span class="cs-inpct">'+pct(acum)+'</span></div></div>';
+    html += '<div class="cs-metrics">';
+    html += '<div class="cs-chip chip-acum"><div class="cc-k">Acumulada</div><div class="cc-v">'+pct(acum)+'</div></div>';
+    if (idx===0){
+      html += '<div class="cs-chip chip-step step-good"><div class="cc-k">Paso a paso</div><div class="cc-v">—</div><div class="cc-sub">base</div></div>';
+    } else {
+      html += '<div class="cs-chip chip-step '+stepClass(drop)+'"><div class="cc-k">Paso a paso</div><div class="cc-v">'+pct(step)+'</div>'+
+              '<div class="cc-sub">−'+pct(drop)+' · '+fmt(dn)+' leads</div></div>';
+    }
+    html += '</div></div>';
+  });
+  html += '<div class="funnel-legend">'+
+          '<div class="fl-i"><span class="fl-sq" style="background:#3b82f6"></span>Conversión acumulada (ancho)</div>'+
+          '<div class="fl-i"><span class="fl-sq" style="background:#fbbf24"></span>Inscrito · DP</div>'+
+          '<div class="fl-i"><span class="fl-sq" style="background:#f87171"></span>Mayor fuga de leads</div>'+
+          '</div></div>';
+
+  // ── callout: dónde se cae la conversión ──
+  html += '<div class="leak"><div class="leak-ttl">📉 Dónde se cae la conversión — '+uni+' · '+curCyc+' · top 3 fugas</div><div class="leak-grid">';
+  worstByN.slice(0,3).forEach(function(t){
+    html += '<div class="leak-i"><div class="leak-tr">'+t.from+' → '+t.stage+'</div>'+
+            '<div class="leak-big">−'+fmt(t.dropN)+'</div>'+
+            '<div class="leak-sub">se pierden aquí · solo pasa el <b style="color:#fca5a5">'+pct(d.conv_step[t.stage])+'</b> (cae '+pct(t.dropStep)+')</div></div>';
+  });
+  html += '</div></div>';
+
+  // ── comparativo entre ciclos ──
+  html += '<div class="section-label">Comparativo entre ciclos — evolución de la conversión</div>';
+
+  // leyenda de ciclos
+  html += '<div class="cyc-legend">';
+  vc.forEach(function(c){
+    html += '<div class="cyc-li"><span class="cyc-sq" style="background:'+CYC_COLOR[c]+'"></span>'+c+' · '+fmt(DATA[uni][c].total)+' leads</div>';
+  });
+  html += '</div>';
+
+  // tabla acum + step por ciclo
+  html += '<div class="cmp-tbl-wrap"><table class="cmp-tbl"><thead><tr class="grp"><th rowspan="2">Etapa</th>';
+  vc.forEach(function(c,ci){ html += '<th colspan="2"'+(ci>0?' class="grp-div"':'')+'>'+c+'</th>'; });
+  html += '</tr><tr class="sub">';
+  vc.forEach(function(c,ci){ html += '<th'+(ci>0?' class="grp-div"':'')+'>Acum.</th><th>Paso a paso</th>'; });
+  html += '</tr></thead><tbody>';
+  SN.forEach(function(s){
+    html += '<tr><td class="stage">'+s+'</td>';
+    vc.forEach(function(c,ci){
+      var cc = DATA[uni][c];
+      html += '<td class="acum'+(ci>0?' grp-div':'')+'">'+pct(cc.conv_acum[s])+'</td>';
+      html += '<td class="step">'+(s==='Lead'?'—':pct(cc.conv_step[s]))+'</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+
+  // ── SVG: conversión paso a paso por transición, año contra año ──
+  html += '<div class="chart-card"><div class="cc-ttl">Conversión paso a paso, año contra año</div>'+
+          '<div class="cc-note">Cada punto = % que pasó de la etapa anterior a esta. Arriba (100%) = pasa casi todo; abajo = se cae la transición. Compara la eficiencia de cada paso entre ciclos.</div>';
+  html += stepChartSVG(uni, vc);
+  html += '</div>';
+
+  if (curCyc === 'C.2024' || (uni==='EEH')){
+    // nota C.2024 combinado
+  }
+
+  document.getElementById('content').innerHTML = html;
+}
+
+// ── SVG line chart de conversión paso a paso ──
+function stepChartSVG(uni, vc){
+  var W=1000, H=380, PL=48, PR=24, PT=24, PB=54;
+  var stagesT = SN.slice(1);                    // transiciones: Válido..DP
+  var n = stagesT.length;
+  var innerW = W-PL-PR, innerH = H-PT-PB;
+  function X(i){ return PL + (n<=1?0: i*(innerW/(n-1))); }
+  function Y(v){ return PT + innerH*(1 - v/100); }
+  var svg = '<svg class="stepchart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Conversión paso a paso por transición">';
+  // gridlines
+  [0,25,50,75,100].forEach(function(g){
+    var y=Y(g);
+    svg += '<line x1="'+PL+'" y1="'+y+'" x2="'+(W-PR)+'" y2="'+y+'" stroke="#17223b" stroke-width="1"/>';
+    svg += '<text x="'+(PL-8)+'" y="'+(y+4)+'" fill="#374151" font-size="12" text-anchor="end">'+g+'%</text>';
+  });
+  // x labels
+  stagesT.forEach(function(s,i){
+    svg += '<text x="'+X(i)+'" y="'+(H-PB+24)+'" fill="#64748b" font-size="12.5" text-anchor="middle" font-weight="600">'+s+'</text>';
+    svg += '<text x="'+X(i)+'" y="'+(H-PB+40)+'" fill="#374151" font-size="10" text-anchor="middle">desde '+SN[i]+'</text>';
+  });
+  // series
+  vc.forEach(function(c){
+    var cc = DATA[uni][c], col = CYC_COLOR[c];
+    var pts = stagesT.map(function(s,i){ return X(i)+','+Y(cc.conv_step[s]); }).join(' ');
+    svg += '<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+    stagesT.forEach(function(s,i){
+      svg += '<circle cx="'+X(i)+'" cy="'+Y(cc.conv_step[s])+'" r="4" fill="'+col+'"/>';
+    });
+  });
+  // legend
+  var lx = PL, ly = PT-6;
+  vc.forEach(function(c){
+    svg += '<rect x="'+lx+'" y="'+(ly-9)+'" width="12" height="12" rx="3" fill="'+CYC_COLOR[c]+'"/>';
+    svg += '<text x="'+(lx+18)+'" y="'+(ly+1)+'" fill="#94a3b8" font-size="12.5" font-weight="600">'+c+'</text>';
+    lx += 18 + (c.length*8) + 26;
+  });
+  svg += '</svg>';
+  return svg;
+}
+
+showUni('AState', document.querySelector('.tabs .tab'));
+</script>
+<script src="nav.js"></script>
+</body>
+</html>
